@@ -1,0 +1,9 @@
+# goal
+string left_right
+float64[] coordinate
+---
+# result
+bool result
+---
+# feedback
+string state
