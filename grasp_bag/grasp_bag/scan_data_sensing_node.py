@@ -34,9 +34,8 @@ class ScanDataSensing(Node):
     def scan_check(self):
         self.scan_data.clear()
         while not self.scan_data and rclpy.ok():
-            rclpy.spin_once(self)
+            rclpy.spin_once(self, timeout_sec=0.7)
             self.get_logger().info("No scan data ...")
-            time.sleep(0.7)
         self.get_logger().info("Scan data is available !")
 
     def scan_params(self):
@@ -63,19 +62,22 @@ class ScanDataSensing(Node):
 
     def scan_zero_change(self, in_zero_list):
         changed_list = []
+        one_back_value = 3.0
         for value in in_zero_list:
             if value >= 0.2:
-                one_buck_value = value
+                one_back_value = value
                 changed_list.append(value)
             #elif value == 0.0:
             #    changed_list.append(3.0)
             else:
-                changed_list.append(one_buck_value)
+                changed_list.append(one_back_value)
+            time.sleep(0.05)
         return changed_list
 
     def graph_data_generate(self, scan_data):
         for i in range(len(scan_data)):
             self.scan_index_list.append(i)
+            time.sleep(0.05)
 
     def graph_plot(self, deg=360, scan_data=None, estimate_result=None):
         if scan_data is None:

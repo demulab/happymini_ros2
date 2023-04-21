@@ -61,10 +61,11 @@ class BaseControl(Node):
     def publish_angular_z(self, max_speed, precision, time_out):
         over_flg = False
         vel_z = 0.0
+        integral_value = 0.0
         vel_max = max_speed
-        kp = 0.0073
-        ki = 0.0
-        kd = 0.0
+        kp = 0.0071 #speed 0.5 0.0073
+        ki = 0.00025 #speed 0.5 0.00028
+        kd = 0.0016 #speed 0.5 0.0017
         start_time = time.time()
         start_plot = time.time()
         while self.round_down(self.judg_deg, precision) != self.round_down(self.current_deg, precision) and rclpy.ok():
@@ -152,7 +153,7 @@ class BaseControl(Node):
         self.get_logger().info(f"Start 'translate_dist' >>> {dist}")
         self.publish_liner_x()
 
-    def rotate_angle(self, deg, precision=0, speed=0.7, time_out=10):
+    def rotate_angle(self, deg, precision=0, speed=0.5, time_out=10):
         self.odom_check()
         try:
             deg = deg.data
@@ -236,7 +237,7 @@ def main():
         time.sleep(0.1)
         #bc.translate_dist(0.3)
         #bc.rotate_angle(30)
-        bc.odom_plot(-90, 1, 0.5, 10)
+        bc.odom_plot(-90, 1, 0.8, 10)
     except KeyboardInterrupt:
         pass
     #thread.join()

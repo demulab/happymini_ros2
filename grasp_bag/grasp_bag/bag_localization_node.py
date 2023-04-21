@@ -39,7 +39,7 @@ class BagLocalizationServer(Node):
             quit()
 
     def bag_range_estimation(self):
-        dispersion_param = 0.01
+        dispersion_param = 0.001
         laser_deviation = 0
         result_dict = {}
         data_list = []
@@ -82,9 +82,9 @@ class BagLocalizationServer(Node):
         return result_dict
     
     def range_to_angle(self, left_right, bag_dict):
-        if left_right == 'left':
-            angle_to_bag = (len(self.search_range_data) - 1) - bag_dict['bag_center']
-        elif left_right == 'right':
+        if left_right == 'right':
+            angle_to_bag =  bag_dict['bag_center'] - (len(self.search_range_data) - 1)
+        elif left_right == 'left':
             angle_to_bag = bag_dict['bag_center']
         else:
             angle_to_bag = bag_dict['bag_center'] - self.sds_node.scan_custom_center
