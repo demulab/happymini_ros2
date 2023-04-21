@@ -7,7 +7,7 @@ from rclpy.executors import MultiThreadedExecutor
 from std_msgs.msg import String
 from happymini_msgs.srv import BagLocalization
 from happymini_msgs.action import GraspBag
-from happymini_manipulation.joint_controller import JointController
+from happymini_manipulation.motor_controller import JointController
 from happymini_teleop.base_control import BaseControl
 
 
