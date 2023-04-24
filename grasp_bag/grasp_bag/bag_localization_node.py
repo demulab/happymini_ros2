@@ -39,7 +39,7 @@ class BagLocalizationServer(Node):
             quit()
 
     def bag_range_estimation(self):
-        dispersion_param = 0.001
+        dispersion_param = 0.0007
         laser_deviation = 0
         result_dict = {}
         data_list = []

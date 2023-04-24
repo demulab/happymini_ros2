@@ -87,13 +87,18 @@ class ScanDataSensing(Node):
             pass
         self.graph_data_generate(scan_data)
         self.get_logger().info("Plotting scan data")
-        plt.plot(self.scan_index_list, scan_data)
+        # 軸ラベル
+        plt.xlabel("Number of data")
+        plt.ylabel("Distance [m]")
+        # プロット
+        plt.plot(self.scan_index_list, scan_data, color='blue', label='Scan data')
         if estimate_result is not None:
-            plt.vlines(estimate_result['bag_range'][0], 0, 4, color='red', linestyles='dotted')
+            plt.vlines(estimate_result['bag_range'][0], 0, 4, color='red', linestyles='dotted', label='Edge of object')
             plt.vlines(estimate_result['bag_range'][-1], 0, 4, color='red', linestyles='dotted')
-            plt.vlines(estimate_result['bag_center'], 0, 4, color='green', linestyles='dotted')
+            plt.vlines(estimate_result['bag_center'], 0, 4, color='green', linestyles='dotted', label='Center of object')
         else:
             pass
+        plt.legend()
         plt.show()
         #if plt.waitforbuttonpress():
         #    plt.close()

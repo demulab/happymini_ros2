@@ -52,7 +52,7 @@ class GraspBagServer(Node):
         self.get_logger().info(f"Bag info >>> {bag_info}")
         self.bc_node.rotate_angle(bag_info['angle_to_bag'])
         time.sleep(1.0)
-        self.bc_node.translate_dist((bag_info['distance_to_bag'] - 0.45)/2, 0.1)
+        self.bc_node.translate_dist((bag_info['distance_to_bag'] - 0.35)/2, 0.1)
         # 2段階目
         bag_info = self.bl_srv_request_send('all')
         self.get_logger().info(f"Bag info >>> {bag_info}")
@@ -63,9 +63,12 @@ class GraspBagServer(Node):
         self.bc_node.rotate_angle(move_angle)
         time.sleep(1.0)
         # 把持
-        self.jc_node.manipulation([0.17, 0.4], False)
-        self.bc_node.translate_dist((bag_info['distance_to_bag'] - 0.4)/2, 0.05)
-        time.sleep(1.0)
+        self.jc_node.manipulation([0.2, 0.45])
+        self.jc_node.manipulation([0.3, 0.45])
+        self.jc_node.manipulation([0.3, 0.5])
+        
+        #self.bc_node.translate_dist((bag_info['distance_to_bag'] - 0.4)/2, 0.05)
+        time.sleep(0.5)
         self.jc_node.start_up()
         # レスポンス
         goal_handle.succeed()

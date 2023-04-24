@@ -59,7 +59,7 @@ class JointController(Node):
         msg.points[0].time_from_start = Duration(
                 seconds=int(execute_time), nanoseconds=(execute_time-int(execute_time))*1e9).to_msg()
         self.joint_pub.publish(msg)
-        time.sleep(execute_time)
+        time.sleep(execute_time + 0.5)
 
     def manipulation(self, coordinate):
         self.joint_angle_list = self.inverse_kinematics(coordinate)
@@ -82,9 +82,9 @@ class JointController(Node):
 def main():
     rclpy.init()
     jc_node = JointController()
-    jc_node.send_goal()
+    #jc_node.send_goal()
     #jc_node.start_up()
-    #jc_node.manipulation([0.2, 0.4])
+    jc_node.manipulation([0.3, 0.5])
     #jc_node.manipulation([0.3, 0.4])
     #jc_node.gripper(False)
     #jc_node.manipulation([0.3, 0.45])
