@@ -23,8 +23,11 @@ class TestNode(Node):
         goal_msg = GraspBag.Goal()
         goal_msg.left_right = left_right
         goal_msg.coordinate = [0.25, 0.4]
+        self.get_logger().info('panti')
         self.grasp_bag.wait_for_server()
+        self.get_logger().info('tinti')
         self.grasp_bag.send_goal(goal_msg)
+        self.get_logger().info('tunku')
 
     def execute(self):
         time.sleep(1.0)
@@ -35,6 +38,7 @@ class TestNode(Node):
         self.get_logger().info("hand_pose >>> {self.hand_pose}")
         self.send_goal(self.hand_pose)
         #self.send_goal('right')
+        self.get_logger().info('onti')
     
 
 
