@@ -109,7 +109,7 @@ def main():
     sds_node = ScanDataSensing()
     try:
         time.sleep(0.1)
-        sds_node.graph_plot(180)
+        sds_node.graph_plot(360)
     except KeyboardInterrupt:
         pass
     #thread.join()
