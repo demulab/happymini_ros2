@@ -10,8 +10,8 @@ find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
-    "srv/GraspBag.srv"
     "srv/BagLocalization.srv"
+    "srv/SetLocation.srv"
     "action/GraspBag.action"
     )
 
