@@ -28,7 +28,8 @@ setup(
             'bag_localization_node = grasp_bag.bag_localization_node:main',
             'grasp_bag_server = grasp_bag.grasp_bag_server:main',
             'test_node = grasp_bag.test_node:main',
-            'happy_mini_master = grasp_bag.happy_mini_master:main'
+            'happy_mini_master = grasp_bag.happy_mini_master:main',
+            'happymini_sekkin = grasp_bag.happymini_sekkin:main'
         ],
     },
 )
