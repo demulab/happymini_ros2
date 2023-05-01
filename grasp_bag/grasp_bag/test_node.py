@@ -23,7 +23,13 @@ class TestNode(Node):
         goal_msg = GraspBag.Goal()
         goal_msg.left_right = left_right
         goal_msg.coordinate = [0.25, 0.4]
+        self.get_logger().info('panti')
         self.grasp_bag.wait_for_server()
+<<<<<<< HEAD
+        self.get_logger().info('tinti')
+        self.grasp_bag.send_goal(goal_msg)
+        self.get_logger().info('tunku')
+=======
         self._send_goal_future = self.grasp_bag.send_goal_async(goal_msg, feedback_callback=self.feedback_callback)
         self._send_goal_future.add_done_callback(self.goal_response_callback)
 
@@ -46,6 +52,7 @@ class TestNode(Node):
     def feedback_callback(self, feedback_msg):
         #feedback = feedback_msg.state
         self.get_logger().info(feedback_msg.feedback.state)
+>>>>>>> main
 
     def execute(self):
         time.sleep(1.0)
@@ -58,6 +65,7 @@ class TestNode(Node):
         self.send_goal('right')
         print("Finish")
         #self.send_goal('right')
+        self.get_logger().info('onti')
     
 
 
