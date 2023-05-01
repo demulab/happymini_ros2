@@ -1,3 +1,5 @@
+import os
+from glob import glob
 from setuptools import setup
 
 package_name = 'happymini_navigation'
@@ -10,6 +12,10 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        (os.path.join('share', package_name, 'launch'),
+            glob('launch/*.launch.py')),
+        (os.path.join('share', package_name, 'location'),
+            glob('location/*.yaml'))
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -21,7 +27,8 @@ setup(
     entry_points={
         'console_scripts': [
             'set_location = happymini_navigation.set_location:main',
-            'test_node = happymini_navigation.test_node:main'
+            'navi_location = happymini_navigation.navi_location:main',
+            'set_params = happymini_navigation.set_params:main'
         ],
     },
 )
