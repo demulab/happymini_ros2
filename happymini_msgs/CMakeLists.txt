@@ -12,6 +12,7 @@ find_package(rosidl_default_generators REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
     "srv/BagLocalization.srv"
     "srv/SetLocation.srv"
+    "srv/NaviLocation.srv"
     "action/GraspBag.action"
     )
 
