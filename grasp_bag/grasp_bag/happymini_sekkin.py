@@ -3,7 +3,7 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 from rclpy.node import Node
-from std_msgs.msg import Float32MultiArray
+from std_msgs.msg import Float32MultiArray, String
 
 import time
 import tf_transformations   
@@ -20,6 +20,7 @@ class Sekkin(Node):
         self.sub = self.create_subscription(Float32MultiArray, 'topic', self.Callback, 10)
         self.pub = self.create_publisher(Twist, 'cmd_vel', 10)
         self.odm_sub = self.create_subscription(Odometry, 'odom', self.odom_cb, 10)
+        self.master_sub = self.create_subscription(String, 'master', self.mas, 10)
         self.timer = self.create_timer(0.01, self.timer_callback)
         self.x, self.y, self.yaw = 0.0, 0.0, 0.0
         self.x0, self.y0, self.yaw0 = 0.0, 0.0, 0.0
@@ -33,6 +34,11 @@ class Sekkin(Node):
         self.dig = 0
         self.dis = 0 
         self.ang = 0
+
+        self.master = 0
+
+    def mas(self, msg):
+        self.master = msg.data
 
     def Callback(self, msg):
         #self.get_logger().info(f'sub:{msg.data}')
@@ -106,18 +112,23 @@ class Sekkin(Node):
             rclpy.spin_once(self)
 
     def happymove(self):
-        self.set_disan()
-        self.happy_move(self.dis, self.ang)
-        self.bc_node.translate_dist(-0.2, 0.1)
-        self.set_disan()
-        self.happy_move(0, self.ang)
+        rclpy.spin_once(self)
+        while rclpy.ok():
+            if self.master == 'start':    
+                self.set_disan()
+                self.happy_move(self.dis, self.ang)
+                self.bc_node.translate_dist(-0.2, 0.1)
+                self.set_disan()
+                self.happy_move(0, self.ang)
+                self.get_logger().info(f'end')
+            rclpy.spin_once(self)
 
 def main(args = None):
     print('start')
     rclpy.init()
     node = Sekkin()
     try:
-        print('undo')
+        print('waite')
         node.happymove()
         print('unti')
         

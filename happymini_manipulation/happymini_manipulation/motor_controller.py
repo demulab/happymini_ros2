@@ -14,7 +14,7 @@ class JointController(Node):
         # Publisher
         self.joint_pub = self.create_publisher(JointTrajectory, 'joint_trajectory_controller/joint_trajectory', 10)
         # Subscriber
-        self.create_subscription()
+        #self.create_subscription()
         # Value
         self.joint_angle_list = []
         self.gripper_close = False
@@ -81,13 +81,13 @@ class JointController(Node):
 #        super(ManipulateArm, self).__init__()
 #        
 #
-#    def manipulation(self, coordinate):
-#        self.joint_angle_list = self.inverse_kinematics(coordinate)
-#        self.publish_joint(self.joint_angle_list, 2)
-#
-#    def start_up(self):
-#        self.joint_angle_list = [0.0, -90, 90, 0.0, -90]
-#        self.publish_joint(self.joint_angle_list)
+    def manipulation(self, coordinate):
+        self.joint_angle_list = self.inverse_kinematics(coordinate)
+        self.publish_joint(self.joint_angle_list, 2)
+
+    def start_up(self):
+        self.joint_angle_list = [0.0, -90, 90, 0.0, -90]
+        self.publish_joint(self.joint_angle_list)
 
     
 
@@ -96,8 +96,8 @@ def main():
     rclpy.init()
     jc_node = JointController()
     #jc_node.send_goal()
-    jc_node.start_up()
-    #jc_node.manipulation([0.3, 0.5])
+    #jc_node.start_up()
+    jc_node.manipulation([0.3, 0.5])
     #jc_node.manipulation([0.3, 0.4])
     #jc_node.gripper(False)
     #jc_node.manipulation([0.3, 0.45])

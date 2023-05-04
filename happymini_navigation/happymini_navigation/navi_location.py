@@ -32,8 +32,8 @@ class WayPointNavi(Node):
         # YAML
         #self.yaml_path = sys.argv[1]
         self.yaml_path = os.path.join(
-                get_package_share_directory('happymini_navigation'), 'location', 'test_navi_map.yaml')
-        self.get_logger().info(f"Load the following YAML file: {self.yaml_path}")
+                get_package_share_directory('happymini_navigation'), 'location', 'test_taikai.yaml')
+        self.get_logger().info(f"Load the following YAML file: {test_taikai.yaml_path}")
         # Value
         self.navigation_flg = False
         self.location_name = None
@@ -116,6 +116,8 @@ class WayPointNavi(Node):
             rclpy.spin_until_future_complete(self, future)
 
     def navigation_execute(self, location_name):#, srv_req, srv_res):
+        send_goal_flg = True #unnko
+        #self.set_params()
         location_coordinate = self.search_location_param(location_name)
         if location_coordinate:
             goal = self.set_pose(location_coordinate)
@@ -135,7 +137,7 @@ def main(args=None):
     rclpy.init(args=args)
     waypoint_navi = WayPointNavi()
     waypoint_navi.set_params()
-    waypoint_navi.navigation_execute('final_location')
+    waypoint_navi.navigation_execute('start_fmm')
     #rclpy.spin(waypoint_navi)
     waypoint_navi.destroy_node()
     rclpy.shutdown()
