@@ -4,12 +4,13 @@ from rclpy.action import ActionClient
 from std_msgs.msg import String
 from happymini_msgs.srv import BagLocalization
 from happymini_msgs.action import GraspBag
-from airobot_interfaces.srv import StringCommand
+#from airobot_interfaces.srv import StringCommand
 import time
 from happymini_manipulation.motor_controller import JointController
 from happymini_navigation.navi_location import WayPointNavi
+from grasp_bag.grasp_bag_server import GraspBagServer 
 import sys
-import pyttsx3
+#import pyttsx3
 #text = None
 
 def synthesis(text = None):
@@ -40,7 +41,7 @@ class TestNode(Node):
     def __init__(self):
         super().__init__('test_grasp_node')
         # Action
-        self.grasp_bag = ActionClient(self, GraspBag, 'grasp_bag_server')
+        self.grasp_bag = GraspBagServer() #ActionClient(self, GraspBag, 'grasp_bag_server')
         # Topic
         self.create_subscription(String, 'way', self.hand_pose_callback, 10)
         # Value
@@ -56,8 +57,9 @@ class TestNode(Node):
         self.get_logger().info("panti")
         self.grasp_bag.wait_for_server()
         self.get_logger().info("tinti")
-        self.grasp_bag.send_goal(goal_msg)
+        result = self.grasp_bag.send_goal(goal_msg)
         self.get_logger().info("tin")
+        print(result)
     #    goal_future = self.grasp_bag.send_goal_async(goal_msg)
     #    goal_future.add_done_callback(self.goal_response_callback)
 
@@ -83,7 +85,8 @@ class TestNode(Node):
         time.sleep(0.5)
         self.get_logger().info("unti")
         self.get_logger().info(f"hand_pose >>> {self.hand_pose}")
-        self.send_goal(self.hand_pose)
+        self.grasp_bag.execute(self.hand_pose)
+        #self.send_goal(self.hand_pose)
         #self.send_goal('right')
         self.get_logger().info("onti")
 
@@ -169,7 +172,7 @@ def main():
         n.execute()
         s.execute()
         #hs.execute() 
-        synthesis("Finish, carry my luggage.")
+        #synthesis("Finish, carry my luggage.")
 
     except KeyboardInterrupt:
         pass
