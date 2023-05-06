@@ -32,7 +32,7 @@ class WayPointNavi(Node):
         # YAML
         #self.yaml_path = sys.argv[1]
         self.yaml_path = os.path.join(
-                get_package_share_directory('happymini_navigation'), 'location', 'test_taikai.yaml')
+                get_package_share_directory('happymini_navigation'), 'location', 'hoteru.yaml')
         self.get_logger().info(f"Load the following YAML file: {self.yaml_path}")
         # Value
         self.navigation_flg = False
@@ -118,7 +118,7 @@ class WayPointNavi(Node):
     def navigation_execute(self, location_name):#, srv_req, srv_res):
         self.navigation_flg = False
         send_goal_flg = True #unnko
-        #self.set_params()
+        self.set_params()
         location_coordinate = self.search_location_param(location_name)
         if location_coordinate:
             goal = self.set_pose(location_coordinate)

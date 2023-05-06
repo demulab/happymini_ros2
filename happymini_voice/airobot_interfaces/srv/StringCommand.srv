@@ -1,5 +1,11 @@
 string command
+string name
+string gender
+string answer
 ---
+bool result
+string error_message
 string answer
 string answer_gender
 string answer_name
+string[] answer_people

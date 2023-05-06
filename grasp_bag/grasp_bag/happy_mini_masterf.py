@@ -4,13 +4,13 @@ from rclpy.action import ActionClient
 from std_msgs.msg import String
 from happymini_msgs.srv import BagLocalization
 from happymini_msgs.action import GraspBag
-#from airobot_interfaces.srv import StringCommand
+from airobot_interfaces.srv import StringCommand
 import time
 from happymini_manipulation.motor_controller import JointController
 from happymini_navigation.navi_location import WayPointNavi
 from grasp_bag.grasp_bag_server import GraspBagServer 
 import sys
-#import pyttsx3
+import pyttsx3
 #text = None
 
 def synthesis(text = None):
@@ -95,10 +95,13 @@ class Navigation(Node):
     def __init__(self):
         super().__init__('test_navigation')
         self.wp_node = WayPointNavi()
+        self.count = 0
 
     def execute(self):
-        self.wp_node.set_params()
+        #self.wp_node.set_params()
         self.wp_node.navigation_execute('start_cml')
+        print(f'navicount:{self.count}')
+        self.count = 1
         time.sleep(2)
 
     def execute2(self):
@@ -106,7 +109,7 @@ class Navigation(Node):
         time.sleep(2)
     
     def execute3(self):
-        self.wp_node.navigation_execute('goal_car1')
+        self.wp_node.navigation_execute('goal_car2')
         time.sleep(2)
 
         
@@ -123,7 +126,7 @@ class GiveBag(Node):
         self.jc_node
         self.get_logger().info("give a bag")
         #self.send_goal()
-        self.jc_node.manipulation([0.17, 0.4])
+        self.jc_node.manipulation([0.2, 0.5])
         time.sleep(5.0)
         self.jc_node.start_up()
 
@@ -142,13 +145,18 @@ class Speech(Node):
         super().__init__('test_speech') 
         self.node = rclpy.create_node('cml_client')
         self.client = self.node.create_client(StringCommand, 'cml_speech_service/wake_up')
-        self.req = StringCommand.Request()
-        self.future = self.client.call_async(self.req)
+        self.req = None
+        self.future = None
         
     def execute(self):
         time.sleep(1.0)
+        print(f'count: {Navigation().count}')
+        #if Navigation().count == 1:
+        self.req = StringCommand.Request()
+        self.future = self.client.call_async(self.req)
         rclpy.spin_until_future_complete(self.node, self.future)
-
+        
+            
         if future.result() is not None:
             response = future.result()
             self.get_logger().info('応答: ' + response.answer)
@@ -163,16 +171,23 @@ def main():
     n = Navigation()
     hs = HitoSekkin()
     s = Speech()
+    k = 0
 
     try:
-        #tn.execute()
-        #time.sleep(30)
-        n.execute()
+        time.sleep(3)
+        tn.execute()
+        time.sleep(15)
+        #print('ok')
+        n.execute3()
+        time.sleep(10)
+        #s.execute()
+        #time.sleep(10)
         gb.execute()
+        time.sleep(10)
         n.execute()
-        s.execute()
+        time.sleep(10)
         #hs.execute() 
-        #synthesis("Finish, carry my luggage.")
+        synthesis("Finish, carry my luggage.")
 
     except KeyboardInterrupt:
         pass

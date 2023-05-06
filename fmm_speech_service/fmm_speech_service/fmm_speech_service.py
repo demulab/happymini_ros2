@@ -7,23 +7,23 @@ import pyaudio
 import whisper
 import sys
 import pyttsx3
-
+import random
 
 model = whisper.load_model("medium")
-sys.path.append("/home/yuto/hapyymini_voice/src/happymini_ros2/happymini_voice/whisper/src")
+sys.path.append("/home/yuto/happymini_voice_offline/src/happymini_ros2/happymini_voice/whisper/src")
 
 def play_sound():
     sound_file = "/home/masaki/tututest_ws/src/happymini_ros2/happymini_voice/mp3/警告音1.mp3"
     playsound.playsound(sound_file, True)
 
 #[*] SpeechServiceクラスをノードとして使うために，Nodeクラスを継承します．
-class SpeechService(rclpy.node.Node):
+class fmm_SpeechService(rclpy.node.Node):
     def __init__(self):
         #[*] ノードの名前を'speech_service'として登録します．
         super().__init__('fmm_speech_service')
 
-        # ３人の名前を格納する辞書
-        self.names = {"male": None, "female": None, "other": None}
+        self.answer_gender = ''
+        self.answer_name = ''
 
         #[*] ノードが起動したことをloggerを用いて表示します．
         self.get_logger().info('音声サーバーを起動しました')
@@ -31,175 +31,51 @@ class SpeechService(rclpy.node.Node):
         #[*] yesかnoかを判別するシステムを開始するコマンドを受け取るためのServiceを作成します．
         #[*] リクエストが来たら，command_callback関数を呼び出します．
         self.service = self.create_service(
-            StringCommand, '/fmm_speech_service/wake_up', self.command_callback)
+            StringCommand, '/fmm_speech_service/wake_up', self.name_and_gender_callback)
 
-        self.names = ["Robert", "Leonardo", "Mary"]        
+        # 3人の名前と性別を格納するリスト
+        self.people = [("male", "Robert"), ("male", "Leonardo"), ("female", "Elizabeth")]
 
-    def command_callback(self, request, response):
-        #[*] サービスを開始したことを音声合成を行い，発話します．
-        self.synthesis("Excuse me. May I ask you a few questions ? Please answer yes or no.")
-        self.synthesis("Are you a male? Please answer with yes or no")
-        self.make_audio_file()
+    def name_and_gender_callback(self, request, response):
 
-        #[*] 認識した文章が受け取れるまで，音声認識を行います．
-        text = None
+        self.synthesis("Excuse me, I have a few questions. Please answer with yes or no.")
 
-        while text is None:
-            text = self.recognition()
-
-        while True:
-        #男性か、女性か？ >>> 男性の場合
-            if "yes" in text.lower():
-                self.synthesis("OK, Thanks.")
-                response.answer_gender = "male"
-                #[*] 認識した文章がyesの場合
-
-                #男性の場合
-                if response.answer_gender == "male":
-                    self.synthesis("Are you Robert ? Please answer yes or no.")
-                    self.make_audio_file()
-                    text = ""
-                    while text == "":
-                        text = self.recognition()
- 
-                    while True:
-                #男性の場合で、Robertだったら 
-                        if "yes" in text.lower():
-                            self.synthesis("OK, Thank you, Robert.")
-                            response.answer_name = "Robert"
-                            break
-                        elif "no" in text.lower():
-                            self.synthesis("OK, Thank you, Leonardo")
-                            response.answer_name = "Leonardo"
-                            break
-                    break
-
-                else:
-                    pass
-                break
-
-                break
+        for gender, name in self.people:
+            self.synthesis(f"Are you {name}? Please answer with yes or no")
+            self.make_audio_file()
             
-            #男性か、女性か？ >>> 女性の場合
-            elif "no" in text.lower():
-                self.synthesis("OK, Thanks.")
-                response.answer_gender = "female"
-                #女性の場合
-                if response.answer_gender == "female":
-                    self.synthesis("Are you Elizabeth ? Please answer yes or no.")
-                    self.make_audio_file()
-                    
-                    text = ""
-                    while text == "":
-                        text = self.recognition()
-                    
-                    while True:
-                #女性の場合で、Elizabethだったら  
-                        if "yes" in text.lower():
-                            self.synthesis("OK, Thank you,Elizabeth.")
-                            response.answer_name = "Elizabeth"
-                            break
-                        
-                        else:
-                            pass
-                            break
+            # 認識した文章が受け取れるまで，音声認識を行います．
+            text = None
+            while text is None:
+                text = self.recognition()
+
+            while True:
+                if "yes" in text.lower():
+                    self.synthesis(f"OK, Thank you.")
+                    response.answer_gender = gender
+                    response.answer_name = name
+                    response.answer_people = [name, gender]
+                    response.answer = "OK"
+                    break
+
+                elif "no" in text.lower():                  
                     break
 
                 else:
-                    pass
-                    break
-    
+                    self.synthesis("Sorry, I didn't understand. Please answer yes or no.")
+                    self.make_audio_file()
+                    text = ""
+                    while text == "":
+                        text = self.recognition()
+
+            if response.answer == "OK":
                 break
 
-        #[*] 聞き取れなかった場合
-            else:
-        #もう一度最初から認識するにょ
-                self.synthesis("Sorry, I didn't understand. Please answer yes or no.")
-                
-                self.make_audio_file()
-                text = ""
-
-                while text == "":
-                    text = self.recognition()
-
-
-                while True:
-        #男性か、女性か？ >>> 男性の場合
-                    if "yes" in text.lower():
-                        self.synthesis("OK, Thanks.")
-                        response.answer_gender = "male"
- 
-                        #男性の場合
-                        if response.answer_gender == "male":
-                            self.synthesis("Are you Robert ? Please answer yes or no.")
-                            self.make_audio_file()
-                    
-                            text = ""
-                            while text == "":
-                                text = self.recognition()
-                            #男性の場合で、Robertだったら、
-                            while True:
-                                if "yes" in text.lower():
-                                    self.synthesis("OK, Thank you, Robert.")
-                                    response.answer_name = "Robert"
-                                    break
-
-                            #男性の場合で、Leonardoだったら、
-                                elif "no" in text.lower():
-                                    self.synthesis("OK, Thank you, Leonardo")
-                                    response.answer_name = "Leonardo"
-                                    break
-
-                                else:
-                                    pass
-                                    break
-
-                            break
-                    
-                        break
-                
-                    #男性か、女性か？ >>> 女性の場合
-                    elif "no" in text.lower():
-                        self.synthesis("OK, Thanks.")
-                        response.answer_gender = "female"
-                    #女性の場合 
-                        if response.answer_gender == "female":
-                            self.synthesis("Are you Elizabeth ? Please answer yes or no.")
-                            self.make_audio_file()
-                    
-                            text = ""
-                            while text == "":
-                                text = self.recognition()
-                    
-                            while True:
-                        #女性の場合で、Elizabethだったら
-                                if "yes" in text.lower():
-                                    self.synthesis("OK, Thank you,Elizabeth.")
-                                    response.answer_name = "Elizabeth"
-                                    break
-                        
-                                else:
-                                    pass
-                                    break
-                            break
-                        break
-
-                    else:     
-                        self.synthesis("Sorry, I didn't understand. Please answer yes or no.")
-                        text = self.recognition()
-        
-
-        #[*] 認識結果をServiceのレンスポンスとして返します．
-        response.answer_gender = text
-        response.answer_name = text
         return response
-    
+   
     def recognition(self):     
     
         text = ''
-        # SpeechService = self.create_service(SpeechService, self.speech_service, self.command_callback)
-        # SpeechService.make_audio_file()
-        # text = self.transcription()
         audio = whisper.load_audio("output.wav")
         audio = whisper.pad_or_trim(audio)
         dictionary = ["YES","Yes.","Yes!","yes","no","イエス","ノー","Yes","No"]
@@ -294,7 +170,7 @@ def main():
     rclpy.init()
 
     #[*] yesかnoかを判別するシステムのサービスを初期化します．
-    fmm_speech_service = SpeechService()
+    fmm_speech_service = fmm_SpeechService()
 
     try:
     #[*] 音声認識のノードを実行します．

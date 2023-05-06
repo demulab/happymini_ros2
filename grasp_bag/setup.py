@@ -30,7 +30,9 @@ setup(
             'test_node = grasp_bag.test_node:main',
             'happy_mini_master = grasp_bag.happy_mini_master:main',
             'happy_mini_masterf = grasp_bag.happy_mini_masterf:main',
-            'happymini_sekkin = grasp_bag.happymini_sekkin:main'
+            'happymini_sekkin = grasp_bag.happymini_sekkin:main',
+            'happy_hand_pose = grasp_bag.happy_hand_pose:detect_hand_pose',
+            'tamesi = grasp_bag.tamesi:main'
         ],
     },
 )
