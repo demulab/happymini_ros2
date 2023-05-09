@@ -15,6 +15,7 @@ class TestNode(Node):
         self.create_subscription(String, 'way', self.hand_pose_callback, 10)
         # Value
         self.hand_pose = None
+        self.result = False
 
     def hand_pose_callback(self, receive_msg):
         self.hand_pose = receive_msg.data
@@ -25,12 +26,9 @@ class TestNode(Node):
         goal_msg.coordinate = [0.25, 0.4]
         self.get_logger().info('panti')
         self.grasp_bag.wait_for_server()
-<<<<<<< HEAD
         self.get_logger().info('tinti')
-        self.grasp_bag.send_goal(goal_msg)
-        self.get_logger().info('tunku')
-=======
         self._send_goal_future = self.grasp_bag.send_goal_async(goal_msg, feedback_callback=self.feedback_callback)
+        self.get_logger().info('tunku')
         self._send_goal_future.add_done_callback(self.goal_response_callback)
 
     def goal_response_callback(self, future):
@@ -45,14 +43,11 @@ class TestNode(Node):
     def get_result_callback(self, future):
         result = future.result().result
         self.get_logger().info(f"結果：{result}")
-
-    def goal_response_callback(self, future):
-        goal_handle = future.result()
+        self.result = result
 
     def feedback_callback(self, feedback_msg):
         #feedback = feedback_msg.state
         self.get_logger().info(feedback_msg.feedback.state)
->>>>>>> main
 
     def execute(self):
         time.sleep(1.0)
@@ -62,7 +57,9 @@ class TestNode(Node):
         #time.sleep(0.5)
         #self.get_logger().info("hand_pose >>> {self.hand_pose}")
         #self.send_goal(self.hand_pose)
-        self.send_goal('right')
+        self.send_goal('left')
+        while not self.result:
+            rclpy.spin_once(self)
         print("Finish")
         #self.send_goal('right')
         self.get_logger().info('onti')
@@ -74,9 +71,8 @@ def main():
     tn = TestNode()
     try:
         tn.execute()
-        rclpy.spin(tn)
+        #rclpy.spin(tn)
     except KeyboardInterrupt:
         pass
-    finally:
-        tn.destroy_node()
-        rclpy.shutdown()
+    tn.destroy_node()
+    rclpy.shutdown()

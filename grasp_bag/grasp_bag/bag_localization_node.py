@@ -4,8 +4,6 @@ from rclpy.executors import MultiThreadedExecutor
 from sensor_msgs.msg import LaserScan
 from grasp_bag.scan_data_sensing_node import ScanDataSensing
 from happymini_msgs.srv import BagLocalization
-import os
-import sys
 import math
 import time
 import threading
