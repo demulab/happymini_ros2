@@ -24,25 +24,25 @@ class TestNode(Node):
         goal_msg = GraspBag.Goal()
         goal_msg.left_right = left_right
         goal_msg.coordinate = [0.25, 0.4]
-        self.get_logger().info('panti')
+        print('wait')
         self.grasp_bag.wait_for_server()
-        self.get_logger().info('tinti')
+        print('call')
         self._send_goal_future = self.grasp_bag.send_goal_async(goal_msg, feedback_callback=self.feedback_callback)
-        self.get_logger().info('tunku')
+        print('add_done')
         self._send_goal_future.add_done_callback(self.goal_response_callback)
 
     def goal_response_callback(self, future):
         goal_handle = future.result()
         if not goal_handle.accepted:
-            self.get_logger().info("ゴールが拒否されました")
+            self.get_logger().error("Goal rejected")
             return
-        self.get_logger().info("ゴールが承認されました")
+        self.get_logger().info("Goal approved!")
         self._get_result_future = goal_handle.get_result_async()
         self._get_result_future.add_done_callback(self.get_result_callback)
 
     def get_result_callback(self, future):
-        result = future.result().result
-        self.get_logger().info(f"結果：{result}")
+        result = future.result().result.result
+        self.get_logger().info(f"Result: {result}")
         self.result = result
 
     def feedback_callback(self, feedback_msg):
@@ -59,7 +59,7 @@ class TestNode(Node):
         #self.send_goal(self.hand_pose)
         self.send_goal('left')
         while not self.result:
-            rclpy.spin_once(self)
+            rclpy.spin_once(self, timeout_sec=0.5)
         print("Finish")
         #self.send_goal('right')
         self.get_logger().info('onti')

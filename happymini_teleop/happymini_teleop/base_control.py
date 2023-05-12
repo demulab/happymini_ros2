@@ -235,9 +235,8 @@ def main():
         #thread = threading.Thread(target=rclpy.spin, args=(bc, ), daemon=True)
         #thread.start()
         time.sleep(0.1)
-        #bc.translate_dist(0.3)
-        #bc.rotate_angle(30)
-        bc.odom_plot(-90, 1, 0.8, 10)
+        bc.translate_dist(-0.1, speed=0.1)
+        #bc.odom_plot(-90, 1, 0.8, 10)
     except KeyboardInterrupt:
         pass
     #thread.join()

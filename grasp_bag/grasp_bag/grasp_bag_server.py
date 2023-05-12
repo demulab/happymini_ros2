@@ -11,7 +11,7 @@ from happymini_manipulation.motor_controller import JointController
 from happymini_teleop.base_control import BaseControl
 
 
-class BagLcalizationClient(Node):
+class BagLocalizationClient(Node):
     def __init__(self):
         super().__init__('bag_localization_client')
         # Client
@@ -44,34 +44,16 @@ class GraspBagServer(Node):
         # Action
         self._action_server = ActionServer(self, GraspBag, 'grasp_bag_server', self.execute)
         # Client
+        self.blc_node = BagLocalizationClient()
         #self.bl_srv = self.create_client(BagLocalization, 'bag_localization_server')
         #while not self.bl_srv.wait_for_service(timeout_sec=1.0):
         #    self.get_logger().info("bag_localization_server is not here ...")
         #self.bl_srv_req = BagLocalization.Request()
-        # Node
-        self.blc_node = BagLcalizationClient()
         # Module
         self.bc_node = BaseControl()
         self.jc_node = JointController()
 
         self.get_logger().info("Ready to set grasp_bag_server")
-
-    #def bl_srv_request_send(self, left_right, scan_range=100, graph=False):
-    #    bl_srv_result = {}
-    #    self.bl_srv_req.left_right = left_right
-    #    self.bl_srv_req.degree = scan_range
-    #    self.bl_srv_req.graph = graph
-
-    #    bl_srv_future = self.bl_srv.call_async(self.bl_srv_req)
-    #    while not bl_srv_future.done() and rclpy.ok():
-    #        rclpy.spin_once(self, timeout_sec=0.1)
-    #    if bl_srv_future.result() is not None:
-    #        bl_srv_result['angle_to_bag'] = bl_srv_future.result().angle_to_bag
-    #        bl_srv_result['distance_to_bag'] = bl_srv_future.result().distance_to_bag
-    #        return bl_srv_result
-    #    else:
-    #        self.get_logger().info(f"Service call failed")
-    #        return None
 
     def execute(self, goal_handle):
         move_angle = 6

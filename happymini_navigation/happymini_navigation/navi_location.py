@@ -32,7 +32,7 @@ class WayPointNavi(Node):
         # YAML
         #self.yaml_path = sys.argv[1]
         self.yaml_path = os.path.join(
-                get_package_share_directory('happymini_navigation'), 'location', 'hoteru.yaml')
+                get_package_share_directory('happymini_navigation'), 'location', 'demulab1.yaml')
         self.get_logger().info(f"Load the following YAML file: {self.yaml_path}")
         # Value
         self.navigation_flg = False
@@ -137,8 +137,8 @@ class WayPointNavi(Node):
 def main(args=None):
     rclpy.init(args=args)
     waypoint_navi = WayPointNavi()
-    waypoint_navi.set_params()
-    waypoint_navi.navigation_execute('start_fmm')
+    #waypoint_navi.set_params()
+    waypoint_navi.navigation_execute('ChairA')
     #rclpy.spin(waypoint_navi)
     waypoint_navi.destroy_node()
     rclpy.shutdown()
