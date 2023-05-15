@@ -46,6 +46,7 @@ class BagLocalizationServer(Node):
         self.get_logger().info("Estimating position from scan data ...")
         min_index = self.search_range_data.index(min(self.search_range_data))
         index_num = min_index
+        # 最小値から右側
         for data in self.search_range_data[min_index :]:
             data_list.append(data)
             laser_average = self.average(data_list)
@@ -61,6 +62,7 @@ class BagLocalizationServer(Node):
                 pass
             index_num += 1
             time.sleep(0.05)
+        # 最小値から左側
         self.search_range_data.reverse()
         index_num = min_index - 1
         for data in self.search_range_data[self.search_range_data.index(min(self.search_range_data)) + 1 :]:
@@ -75,6 +77,7 @@ class BagLocalizationServer(Node):
             index_num -= 1
             time.sleep(0.05)
         self.search_range_data.reverse()
+        # ディクショナリに推定結果格納
         result_dict['bag_range'] = bag_range
         result_dict['bag_center'] = bag_range[self.sds_node.round_half_up(len(bag_range)/2 - 1)]
         return result_dict
@@ -92,12 +95,17 @@ class BagLocalizationServer(Node):
         return float(angle_to_bag), float(distance_to_bag)
 
     def estimation_execute(self, srv_req, srv_res):
+        # スキャン範囲設定
         self.sds_node.scan_range_set(srv_req.degree)
+        # left_rightコマンドからスキャン範囲抽出
         self.command_to_range(srv_req.left_right)
+        # バッグの位置推定
         bag_dict = self.bag_range_estimation()
+        # バッグの範囲から「距離」と「角度」取得
         angle_to_bag, distance_to_bag = self.range_to_angle(srv_req.left_right, bag_dict)
         if srv_req.graph:
             self.sds_node.graph_plot(srv_req.degree, self.search_range_data, bag_dict)
+        # レスポンス
         srv_res.angle_to_bag = angle_to_bag
         srv_res.distance_to_bag = distance_to_bag
         return srv_res
