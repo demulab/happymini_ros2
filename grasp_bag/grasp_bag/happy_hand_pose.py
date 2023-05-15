@@ -27,7 +27,7 @@ class HandPosePublish(Node):
 
     self.way = self.create_publisher(String, '/way', 10)
 
-    self.timer = self.create_timer(1, self.timer_callback)
+    self.timer = self.create_timer(0.01, self.timer_callback)
 
     self.pipeline = rs.pipeline()
     self.config = rs.config()
@@ -77,7 +77,7 @@ class HandPosePublish(Node):
           elif (hand_left.x - shoulder_left.x) > 0.1:
             way = 'right'
           else:
-            way = 'all'
+            way = 'None pose'
       
       cv2.imshow('Pose', image)
       cv2.waitKey(1)
