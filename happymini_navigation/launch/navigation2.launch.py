@@ -9,18 +9,15 @@ from launch.actions import IncludeLaunchDescription
 from launch_ros.actions import Node
 
 def generate_launch_description():
-    LOCATION_FILE_NAME = 'test_navi_map'
-
     # turtlebot3_navigation2 launch file
     turtlebot3_navigation2_launch = os.path.join(
             get_package_share_directory('turtlebot3_navigation2'), 'launch')
     
     # location param
-    yaml_file = LOCATION_FILE_NAME + '.yaml'
     yaml_path = os.path.join(
             get_package_share_directory('happymini_navigation'), 
             'location',
-            yaml_file)
+            'demulab_map.yaml')
 
     return LaunchDescription([
         DeclareLaunchArgument(
@@ -36,6 +33,6 @@ def generate_launch_description():
         Node(
             package='happymini_navigation',
             executable='navi_location',
-            arguments=[LaunchConfiguration('yaml')],
+            arguments=[yaml_path],
             output='screen'),
         ])
