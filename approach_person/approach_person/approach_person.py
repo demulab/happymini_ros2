@@ -16,7 +16,7 @@ from happymini_teleop.base_control import BaseControl
 
 class Sekkin(Node):
     def __init__(self):
-        super().__init__('sekkin_suv')
+        super().__init__('approach_person')
         self.sub = self.create_subscription(Float32MultiArray, 'topic', self.Callback, 10)
         self.pub = self.create_publisher(Twist, 'cmd_vel', 10)
         self.odm_sub = self.create_subscription(Odometry, 'odom', self.odom_cb, 10)

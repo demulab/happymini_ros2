@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'detect_pose'
+package_name = 'rcj_2023_master'
 
 setup(
     name=package_name,
@@ -13,14 +13,15 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='demulab',
+    maintainer='yusukepad',
     maintainer_email='c1005073@planet.kanazawa-it.ac.jp',
     description='TODO: Package description',
     license='TODO: License declaration',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'detect_left_right = detect_pose.detect_left_right:main'
+            'carry_my_luggage_2023 = rcj_2023_master.carry_my_luggage_2023:main',
+            'find_my_mates_2023 = rcj_2023_master.find_my_mates_2023:main'
         ],
     },
 )
