@@ -1,5 +1,6 @@
 import rclpy
 from rclpy.node import Node
+from rclpy.parameter import Parameter
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import LaserScan
 import math
@@ -9,7 +10,7 @@ import matplotlib.pyplot as plt
 
 
 class ScanDataSensing(Node):
-    def __init__(self):
+    def __init__(self, lrf_type, up_down):
         super().__init__('scan_data_sensing_node')
         # Subscriber
         self.create_subscription(LaserScan, '/scan', self.scan_callback, qos_profile_sensor_data)
@@ -19,10 +20,15 @@ class ScanDataSensing(Node):
         self.scan_increment = 999.9
         self.scan_custom_data = []
         self.scan_custom_center = 'NULL'
+        self.lrf_info = {'LRF_TYPE': lrf_type, 'UP_DOWN': up_down}
+        self.get_logger().info(f"LRF_TYPE: {self.lrf_info['LRF_TYPE']}")
+        self.get_logger().info(f"UP_DOWN: {self.lrf_info['UP_DOWN']}")
 
     def scan_callback(self, receive_msg):
         self.scan_data = list(receive_msg.ranges)
         self.scan_increment = math.degrees(receive_msg.angle_increment)
+        if self.lrf_info['UP_DOWN'] == 'down' or self.lrf_info['UP_DOWN'] == 'DOWN':
+            self.scan_data = list(reversed(self.scan_data))
 
     def deg_to_index(self, deg):
         return int(deg / self.scan_increment)
@@ -52,12 +58,16 @@ class ScanDataSensing(Node):
         max_index = int(target_range / 2)  # 残すデータの終了位置
         min_index = 360 - max_index  # 残すデータの開始位置(時計回り)
         del local_scan_data[max_index + 1 : min_index]  # 必要なデータ以外削除
-        # 中心からスキャンしてる場合は入れ替え
-        tmp_list = local_scan_data[0 : max_index + 1]
-        del local_scan_data[0 : max_index + 1]
-        local_scan_data.extend(tmp_list)
-        # インスタンス変数に格納
-        self.scan_custom_data = self.scan_zero_change(local_scan_data)
+        # LRFによってリスト調整
+        if self.lrf_info['LRF_TYPE'] == 'LDS-01':  # 中心からスキャンしてるので入れ替え
+            tmp_list = local_scan_data[0 : max_index + 1]
+            del local_scan_data[0 : max_index + 1]
+            local_scan_data.extend(tmp_list)
+            self.scan_custom_data = self.scan_zero_change(local_scan_data)
+        elif self.lrf_info['LRF_TYPE'] == 'UTM-30LX':
+            self.scan_custom_data = local_scan_data
+        else:
+            self.get_logger().info(f"'{self.lrf_info['LRF_TYPE']}' not supported")
         self.scan_params()
 
     def scan_zero_change(self, in_zero_list):
@@ -67,19 +77,17 @@ class ScanDataSensing(Node):
             if value >= 0.2:
                 one_back_value = value
                 changed_list.append(value)
-            #elif value == 0.0:
-            #    changed_list.append(3.0)
             else:
                 changed_list.append(one_back_value)
-            time.sleep(0.05)
+            time.sleep(0.001)
         return changed_list
 
     def graph_data_generate(self, scan_data):
         for i in range(len(scan_data)):
             self.scan_index_list.append(i)
-            time.sleep(0.05)
+            time.sleep(0.001)
 
-    def graph_plot(self, deg=360, scan_data=None, estimate_result=None):
+    def graph_plot(self, deg=180, scan_data=None, estimate_result=None):
         if scan_data is None:
             self.scan_range_set(deg)
             scan_data = self.scan_custom_data
@@ -108,10 +116,8 @@ def main():
     rclpy.init()
     sds_node = ScanDataSensing()
     try:
-        time.sleep(0.1)
-        sds_node.graph_plot(360)
+        sds_node.graph_plot(180)
     except KeyboardInterrupt:
         pass
-    #thread.join()
     sds_node.destroy_node()
     rclpy.shutdown()

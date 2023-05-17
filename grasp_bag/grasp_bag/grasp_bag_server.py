@@ -40,7 +40,7 @@ class BagLocalizationClient(Node):
 
 class GraspBagServer(Node):
     def __init__(self):
-        super().__init__('grasp_bag_server_node')
+        super().__init__('grasp_bag_node')
         # Action
         self._action_server = ActionServer(self, GraspBag, 'grasp_bag_server', self.execute)
         # Client
@@ -53,7 +53,7 @@ class GraspBagServer(Node):
         self.bc_node = BaseControl()
         self.jc_node = JointController()
 
-        self.get_logger().info("Ready to set grasp_bag_server")
+        self.get_logger().info("Ready to set /grasp_bag_server")
 
     def execute(self, goal_handle):
         move_angle = 6

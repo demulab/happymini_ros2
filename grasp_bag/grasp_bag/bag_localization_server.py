@@ -1,8 +1,9 @@
 import rclpy
 from rclpy.node import Node
+from rclpy.parameter import Parameter
 from rclpy.executors import MultiThreadedExecutor
 from sensor_msgs.msg import LaserScan
-from grasp_bag.scan_data_sensing_node import ScanDataSensing
+from grasp_bag.scan_data_sensing_mod import ScanDataSensing
 from happymini_msgs.srv import BagLocalization
 import math
 import time
@@ -14,13 +15,22 @@ class BagLocalizationServer(Node):
         super().__init__('bag_localization_node')
         # Service
         self.srv = self.create_service(BagLocalization, 'bag_localization_server', self.estimation_execute)
+        # Params from launch
+        self.declare_parameters(
+                namespace='',
+                parameters=[
+                    ('LRF_TYPE', Parameter.Type.STRING),
+                    ('up_down', Parameter.Type.STRING)])
+        # get Params
+        lrf_type = self.get_parameter('LRF_TYPE').value
+        up_down = self.get_parameter('up_down').value
+        # Module
+        self.sds_node = ScanDataSensing(lrf_type, up_down)
         # Value
         self.search_range_data = []
         self.scan_custom_range = 999.9
-        # Module
-        self.sds_node = ScanDataSensing()
-        self.get_logger().info("Ready to set bag_localization_server")
-
+        self.get_logger().info("Ready to set /bag_localization_server")
+  
     def average(self, input_list):
         return sum(input_list)/len(input_list)
 
