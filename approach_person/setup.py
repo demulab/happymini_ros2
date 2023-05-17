@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'hand'
+package_name = 'approach_person'
 
 setup(
     name=package_name,
@@ -13,15 +13,14 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='kohei',
-    maintainer_email='kohei@todo.todo',
+    maintainer='yusukepad',
+    maintainer_email='c1005073@planet.kanazawa-it.ac.jp',
     description='TODO: Package description',
     license='TODO: License declaration',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'hand_pose_publish = hand.hand_pose_publish:detect_hand_pose',
-            'subscriber = hand.subscriber:main'    
+            'approach_person = approach_person.approach_person:main'
         ],
     },
 )

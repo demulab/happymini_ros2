@@ -1,8 +1,6 @@
-import os
-from glob import glob
 from setuptools import setup
 
-package_name = 'grasp_bag'
+package_name = 'rcj_2023_master'
 
 setup(
     name=package_name,
@@ -12,10 +10,6 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        (os.path.join('share', package_name, 'launch'),
-            glob('launch/*.launch.py')),
-        (os.path.join('share', package_name, 'config'),
-            glob('config/*.yaml'))
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -26,10 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'scan_data_sensing_mod = grasp_bag.scan_data_sensing_mod:main',
-            'bag_localization_server = grasp_bag.bag_localization_server:main',
-            'grasp_bag_server = grasp_bag.grasp_bag_server:main',
-            'test_node = grasp_bag.test_node:main'
+            'carry_my_luggage_2023 = rcj_2023_master.carry_my_luggage_2023:main',
+            'find_my_mates_2023 = rcj_2023_master.find_my_mates_2023:main'
         ],
     },
 )

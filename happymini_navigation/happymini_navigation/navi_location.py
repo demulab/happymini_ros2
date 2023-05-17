@@ -138,7 +138,7 @@ def main(args=None):
     rclpy.init(args=args)
     waypoint_navi = WayPointNavi()
     #waypoint_navi.set_params()
-    waypoint_navi.navigation_execute('ChairA')
+    waypoint_navi.navigation_execute('fmm_Operator')
     #rclpy.spin(waypoint_navi)
     waypoint_navi.destroy_node()
     rclpy.shutdown()
