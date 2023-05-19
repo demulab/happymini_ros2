@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>speech_service</name>
+  <name>happymini_voice</name>
   <version>0.0.0</version>
-  <description>ROS2 package for speech recognition and speech synthesis</description>
-  <maintainer email="ai-robot-book@googlegroups.com">Masaki Ito</maintainer>
-  <license>Apache License 2.0</license>
+  <description>TODO: Package description</description>
+  <maintainer email="c1005073@planet.kanazawa-it.ac.jp">demulab</maintainer>
+  <license>TODO: License declaration</license>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

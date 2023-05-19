@@ -13,6 +13,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     "srv/BagLocalization.srv"
     "srv/SetLocation.srv"
     "srv/NaviLocation.srv"
+    "srv/TextToSpeech.srv"
     "action/GraspBag.action"
     )
 
