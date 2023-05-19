@@ -1,0 +1,5 @@
+text_to_speech:
+  ros__parameters:
+    rate: 150        # 音声のスピード
+    volume: 2.0     # 音量
+    voice_type: 11  # 音声のタイプ
