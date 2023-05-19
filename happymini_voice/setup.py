@@ -26,7 +26,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'text_to_speech = happymini_voice.text_to_speech:main'
+            'text_to_speech = happymini_voice.text_to_speech:main',
+            'speech_to_text = happymini_voice.speech_to_text:main',
         ],
     },
 )
