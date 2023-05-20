@@ -53,7 +53,7 @@ class DetectPose(smach.State):
         return 'detected'
 
 
-class GraspBag(smach.State):
+class GraspBagState(smach.State):
     def __init__(self, node):
         smach.State.__init__(
                 self,
@@ -156,7 +156,7 @@ class CarryMyLuggage(Node):
                                  'detected':'GRASP_BAG'},
                     remapping={'left_right_out':'left_right'})
             smach.StateMachine.add(
-                    'GRASP_BAG', GraspBag(self),
+                    'GRASP_BAG', GraspBagState(self),
                     transitions={'failed':'GRASP_BAG',
                                  'success':'CHASER'},
                     remapping={'left_right_in':'left_right'})
