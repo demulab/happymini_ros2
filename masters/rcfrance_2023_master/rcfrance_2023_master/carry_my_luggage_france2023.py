@@ -1,8 +1,11 @@
 import time
 import rclpy
 from rclpy.node import Node
+from rclpy.action import ActionClient
 import smach
 from std_msgs.msg import String
+# Custom msg
+from happymini_msgs.action import GraspBag
 
 
 class DetectPose(smach.State):
@@ -49,17 +52,50 @@ class DetectPose(smach.State):
             return 'time_out'
         return 'detected'
 
+
 class GraspBag(smach.State):
     def __init__(self, node):
         smach.State.__init__(
                 self,
                 outcomes=['failed', 'success'],
                 input_keys=['left_right_in'])
+        # Node
         self.node = node
         self.logger = node.get_logger()
+        # Action
+        self.grasp_bag = ActionClient(node, GraspBag, 'grasp_bag_server')
+        # Value
+        self.result = False
+
+    def send_goal(self, left_right):
+        goal_msg = GraspBag.Goal()
+        goal_msg.left_right = left_right
+        goal_msg.coordinate = [0.25, 0.4]
+        self.grasp_bag.wait_for_server()
+        self.send_goal_future = self.grasp_bag.send_goal_async(goal_msg, feedback_callback=self.feedback_callback)
+        self.send_goal_future.add_done_callback(self.goal_response_callback)
+
+    def goal_response_callback(self, future):
+        goal_handle = future.result()
+        if not goal_handle.accepted:
+            self.logger.error("Goal rejected")
+            return 'failed'
+        self.logger.info("Goal approved !")
+        self.get_result_future = goal_handle.get_result_async()
+        self.get_result_future.add_done_callback(self.get_result_callback)
+
+    def get_result_callback(self, future):
+        result = future.result().result.result
+        self.logger.info(f"Result: {result}")
+
+    def feedback_callback(self, feedback_msg):
+        self.logger.info(feedback_msg.feedback.state)
 
     def execute(self, userdata):
         self.logger.info(f"(left_right, <{userdata.left_right_in}>)")
+        self.send_goal(userdata.left_right_in)
+        while not self.result:
+            rclpy.spin_once(self.node, timeout_sec=0.5)
         return 'success'
 
 
