@@ -22,26 +22,26 @@ import copy
 def DEG2RAD(DEG): return math.pi*DEG/180.0
 def RAD2DEG(RAD): return 180.0*RAD/math.pi
 
-g_find_leg_radius = 20.0                #検出範囲の中心座標から半径[px]
-kExtendRadius = 25.0                    #見失ったときの検出範囲[px]
+g_find_leg_radius = 45.0                #検出範囲の中心座標から半径[px]
+kExtendRadius = 60.0                    #見失ったときの検出範囲[px]
 kOrignalRadius = g_find_leg_radius      
 kMagnificationWorldImagePos = 10.0      #画像上で物体同士が重ならないようにするための世界座標の倍率
 kUpdateLastImageCount  = 30.0           #比較する世界座標系の画像を更新するループ回数　one loop 30[ms]
 
 kFollowMaxDistance = 6.0                #追従距離の最大
-kFollowDistance    = 0.6                #人からこの距離で追従する
-kFollowMinDistance = 0.6                #追従距離の最小
+kFollowDistance    = 0.4                #人からこの距離で追従する
+kFollowMinDistance = 0.3                #追従距離の最小
 kFollowAngle       = 180.0              #探す範囲は正面のこの角度[deg]
 kGainLinear        = 0.4                #P制御比例ゲイン
 kKp                = 0.10               #PD制御ゲイン(回転)
-kKd                = 5.25               #
-kLinearMaxSpeed    = 0.6                #並進の最大速度
-kTurnMaxSpeed      = 1.0                #角速度　最大3.14[rad/s]
+kKd                = 0.3                #
+kLinearMaxSpeed    = 0.5                #並進の最大速度
+kTurnMaxSpeed      = 0.3                #角速度　最大3.14[rad/s]
 
 kDefaultDetectPosX	= 250.0             #検出範囲のxの初期の中心座標[px]
 kDefaultDetectPosY = 200.0              #検出範囲のyの初期の中心座標[px]
 kLostTime          = 60.0               #人を完全に見失ったと判断するループ回数、one loop 30[ms]
-kLegBetweenDistance = 0.6               #人の足だと判断する足候補感の距離[m]
+kLegBetweenDistance = 0.4               #人の足だと判断する足候補感の距離[m]
 
 kImageWidth=500                         #[px]
 kImageHeight=500                        #[px]
