@@ -20,7 +20,8 @@ class BagLocalizationServer(Node):
                 namespace='',
                 parameters=[
                     ('LRF_TYPE', Parameter.Type.STRING),
-                    ('up_down', Parameter.Type.STRING)])
+                    ('up_down', Parameter.Type.STRING),
+                    ('estimation.dispersion', Parameter.Type.DOUBLE)])
         # get Params
         lrf_type = self.get_parameter('LRF_TYPE').value
         up_down = self.get_parameter('up_down').value
@@ -47,7 +48,7 @@ class BagLocalizationServer(Node):
             quit()
 
     def bag_range_estimation(self):
-        dispersion_param = 0.005
+        dispersion_param = self.get_parameter('estimation.dispersion').value
         laser_deviation = 0
         result_dict = {}
         data_list = []
