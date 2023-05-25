@@ -18,7 +18,7 @@ class TestClient(Node):
         while not stt_srv_future.done() and rclpy.ok():
             rclpy.spin_once(self, timeout_sec=0.1)
         if stt_srv_future.result() is not None:
-            stt_srv_result = stt_srv_future.result
+            stt_srv_result = stt_srv_future.result()
             print(stt_srv_result)
             return stt_srv_result
         else:
@@ -30,6 +30,7 @@ def main():
     tc = TestClient()
     try:
         tc.send_request()
+        print(SpeechToText.Response())
         rclpy.spin_once(tc)
     except KeyboardInterrupt:
         pass
