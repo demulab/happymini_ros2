@@ -28,7 +28,8 @@ setup(
         'console_scripts': [
             'text_to_speech = happymini_voice.text_to_speech:main',
             'speech_to_text = happymini_voice.speech_to_text:main',
-            'tts_coqui = happymini_voice.tts_coqui:main'
+            'tts_coqui = happymini_voice.tts_coqui:main',
+            'name_detect = happymini_voice.name_detect:main'
         ],
     },
 )
