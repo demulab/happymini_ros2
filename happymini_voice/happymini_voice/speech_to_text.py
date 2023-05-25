@@ -20,13 +20,13 @@ class SpeechToTextServer(Node):
     # whisperでマイクから文字起こし
     def transcription(self, model, recognizer):
         with sr.Microphone(sample_rate=16_000) as source:
-            print(recognizer.energy_threshold)
+            #print(recognizer.energy_threshold)
             try:
                 audio = recognizer.listen(source, timeout=1, phrase_time_limit=1)
             except sr.exceptions.WaitTimeoutError:
                 pass
-            print("なにか話してください")
-            print(recognizer.energy_threshold)
+            #print("なにか話してください")
+            #print(recognizer.energy_threshold)
             recognizer.dynamic_energy_threshold = False
             distance = 0.5
             #recognizer.energy_threshold = recognizer.energy_threshold + 60
@@ -36,18 +36,18 @@ class SpeechToTextServer(Node):
             y = math.sqrt((x+60)**2/x**2-1)
             recognizer.energy_threshold = math.sqrt(x**2+(x*dis*sik*y)**2)
             #recognizer.energy_threshold = recognizer.energy_threshold * 1.8 * (0.5/distance)
-            print(recognizer.energy_threshold)
+            #print(recognizer.energy_threshold)
             audio = recognizer.listen(source, timeout=20)
-            print(recognizer.energy_threshold)
+            #print(recognizer.energy_threshold)
     
-        print("音声処理中 ...")
+        #print("音声処理中 ...")
         wav_bytes = audio.get_wav_data()
         wav_stream = BytesIO(wav_bytes)
         audio_array, sampling_rate = sf.read(wav_stream)
         audio_fp32 = audio_array.astype(np.float32)
     
         res = model.transcribe(audio_fp32, fp16=False,language="en")
-        print(res["text"])
+        #print(res["text"])
         return res["text"]
 
     def listen(self, srv_req, srv_res):
@@ -75,4 +75,4 @@ def main():
         pass
     stts.destroy_node()
     rclpy.shutdown()
-    print('end')
+    #print('end')
