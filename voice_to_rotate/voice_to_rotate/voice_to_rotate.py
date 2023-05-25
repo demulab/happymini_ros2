@@ -1,4 +1,5 @@
 import time
+import statistics
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import UInt16
@@ -19,20 +20,23 @@ class VoiceToRotate(Node):
         self.custom_angle = self.sub_angle
         if self.sub_angle > 180 and self.sub_angle < 270:
             self.custom_angle = (self.sub_angle - 270) - 90
-        #self.get_logger().info(f"custom_angle: {self.custom_angle}")
 
     def get_angle(self, timeout=10):
-        voice_angle = self.custom_angle
+        angle_list = []
+        voice_angle = 0
         start_time = time.time()
-        while time.time() - start_time <= 10 and rclpy.ok():
+        self.get_logger().info('Now getting audio ...')
+        while time.time() - start_time <= timeout and rclpy.ok():
             rclpy.spin_once(self, timeout_sec=0.1)
-            now_time = time.time() - start_time
-            if abs(voice_angle - self.custom_angle) <= 5 and now_time > 5.0:
-                break
+            # 誤差5度未満だったらリストに格納
+            if abs(voice_angle - self.custom_angle) <= 5:
+                angle_list.append(voice_angle)
             else:
-                #start_time = time.time()
                 voice_angle = self.custom_angle
-            print(voice_angle)
+            # 要素数が10以上になったらbreak
+            if len(angle_list) >= 30:
+                break
+        result_angle = statistics.mode(angle_list)  # 最頻値
         return voice_angle
 
     def rotate(self):
@@ -44,7 +48,9 @@ def main():
     rclpy.init()
     vtr = VoiceToRotate()
     try:
-        vtr.rotate()
+        while rclpy.ok():
+            vtr.rotate()
+            time.sleep(1.0)
     except:
         pass
     vtr.destroy_node()
