@@ -47,9 +47,9 @@ class ScanDataSensing(Node):
     def scan_params(self):
         scan_index_sum = len(self.scan_custom_data)
         self.scan_custom_center = self.round_half_up(scan_index_sum/2)
-        self.get_logger().info(f"Number of scan data >>> {scan_index_sum}")
-        self.get_logger().info(f"Center of scan index >>> {self.scan_custom_center}")
-        self.get_logger().info(f"Degree per step >>> {self.scan_increment}")
+        self.get_logger().info(f"Number of scan data: {scan_index_sum}")
+        self.get_logger().info(f"Center of scan index: {self.scan_custom_center}")
+        self.get_logger().info(f"Degree per step: {self.scan_increment}")
 
     def scan_range_set(self, deg):
         self.scan_check()
@@ -112,10 +112,9 @@ class ScanDataSensing(Node):
             plt.vlines(estimate_result['bag_center'], 0, 4, color='green', linestyles='dotted', label='Center of object')
         else:
             pass
-        plt.legend()
+        plt.legend()  # 凡例表示
         plt.show()
-        #if plt.waitforbuttonpress():
-        #    plt.close()
+        self.scan_index_list.clear()
 
 
 def main():

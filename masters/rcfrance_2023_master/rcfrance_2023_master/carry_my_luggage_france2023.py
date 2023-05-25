@@ -3,9 +3,11 @@ import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
 import smach
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
+from geometry_msgs.msg import Twist
 # Custom msg
 from happymini_msgs.action import GraspBag
+from happymini_msgs.srv import TextToSpeech, SpeechToText
 
 
 class DetectPose(smach.State):
@@ -46,6 +48,7 @@ class DetectPose(smach.State):
                 tmp_time = time_count
 
     def execute(self, userdata):
+        return 'detected'
         self.get_pose()
         userdata.left_right_out = self.hand_pose
         if self.timeout_flg:
@@ -92,6 +95,7 @@ class GraspBagState(smach.State):
         self.logger.info(feedback_msg.feedback.state)
 
     def execute(self, userdata):
+        return 'success'
         self.logger.info(f"(left_right, <{userdata.left_right_in}>)")
         self.send_goal(userdata.left_right_in)
         while not self.result:
@@ -104,8 +108,60 @@ class Chaser(smach.State):
         smach.State.__init__(
                 self,
                 outcomes=['stop'])
+        # Node
+        self.node = node
+        self.logger = node.get_logger()
+        # Topic
+        self.follow_pub = self.node.create_publisher(String, 'follow_human', 10)
+        self.twist_pub = self.node.create_publisher(Twist, 'cmd_vel', 10)
+        self.node.create_subscription(Bool, 'find_human', self.find_human_callback, 10)
+        self.node.create_subscription(Twist, 'cmd_vel', self.cmd_vel_callback, 10)
+        # Timer
+        self.timer = self.node.create_timer(0.1, self.timer_callback)
+        # Value
+        self.chaser_msg = String()
+        self.twist_value = Twist()
+        self.sub_linear_x = 999.9  # サブスクライブした値
+        self.find_human_flg = False
+
+    def timer_callback(self):
+        if self.chaser_msg.data == 'start' or self.chaser_msg.data == 'stop':
+            self.follow_pub.publish(self.chaser_msg)
+        elif self.chaser_msg == 'stop_vel':
+            self.twist_value.linear.x = 0.0
+            self.twist_value.angular.z = 0.0
+            self.twist_pub.publish(self.twist_value)
+        else:
+            pass
+
+    def find_human_callback(self, receive_msg):
+        self.find_human_flg = receive_msg.data
+
+    def cmd_vel_callback(self, receive_msg):
+        self.sub_linear_x = receive_msg.linear.x
 
     def execute(self, userdata):
+        self.chaser_msg.data = 'start'
+        start_time = 0.0
+        while rclpy.ok():
+            rclpy.spin_once(self.node, timeout_sec=0.1)
+            if self.sub_linear_x == 0.0 and self.chaser_msg.data == 'start' and time_counter > 5.0:
+                self.logger.info("Is this the location of a car?")
+                _ = self.node.tts('Is this the location of a car?')
+                self.logger.info("Doing /stt")
+                response = self.node.stt()
+                self.logger.info(f"{response}")
+            elif self.sub_linear_x == 0.0 and start_time != 0.0:
+                time_counter = time.time() - start_time
+            elif self.sub_linear_x == 0.0 and time_counter == 0.0:
+                start_time = time.time()
+            else:
+                time_counter = 0.0
+                start_time = 0.0
+            self.logger.info(f"{time_counter}")
+                
+            #self.logger.info(f"{self.find_human_flg}")
+            
         return 'stop'
 
 
@@ -142,6 +198,39 @@ class Return(smach.State):
 class CarryMyLuggage(Node):
     def __init__(self):
         super().__init__('carry_my_luggage')
+        # Service
+        self.tts_srv = self.create_client(TextToSpeech, 'tts')
+        self.stt_srv = self.create_client(SpeechToText, 'stt')
+        while not self.tts_srv.wait_for_service(timeout_sec=1.0) and not self.stt_srv.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info("/tts and /stt is not here ...")
+        self.tts_msg = TextToSpeech.Request()
+        self.stt_msg = SpeechToText.Request()
+
+    def tts(self, text):
+        # msg
+        self.tts_msg.text = text
+        # Request
+        tts_srv_future = self.tts_srv.call_async(self.tts_msg)
+        while not tts_srv_future.done() and rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.1)
+        if tts_srv_future.result() is not None:
+            return True
+        else:
+            self.get_logger().info("/tts service call failed")
+            return False
+
+    def stt(self):
+        # msg
+        self.stt_msg.tex = 'tmp'
+        # Request
+        stt_srv_future = self.stt_srv.call_async(self.stt_msg)
+        while not stt_srv_future.done() and rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.1)
+        if stt_srv_future.result() is not None:
+            return stt_srv_future.result()
+        else:
+            self.get_logger().info("/stt service call failed")
+            return False
 
     def execute(self):
         # Create a SMACH state machine

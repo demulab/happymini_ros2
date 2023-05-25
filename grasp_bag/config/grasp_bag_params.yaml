@@ -3,5 +3,4 @@ bag_localization_node:
     LRF_TYPE: "UTM-30LX"  # LDS-01 or UTM-30LX
     up_down: "up"  # LRFが上下反転しているか（down: 逆さま）
     estimation:
-      scan_range: 180
       dispersion: 0.005  # 分散値（バッグの端）
