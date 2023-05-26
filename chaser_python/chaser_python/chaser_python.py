@@ -28,10 +28,10 @@ kOrignalRadius = g_find_leg_radius
 kMagnificationWorldImagePos = 10.0      #画像上で物体同士が重ならないようにするための世界座標の倍率
 kUpdateLastImageCount  = 30.0           #比較する世界座標系の画像を更新するループ回数　one loop 30[ms]
 
-kFollowMaxDistance = 6.0                #追従距離の最大
+kFollowMaxDistance = 2.0                #追従距離の最大
 kFollowDistance    = 0.4                #人からこの距離で追従する
 kFollowMinDistance = 0.3                #追従距離の最小
-kFollowAngle       = 180.0              #探す範囲は正面のこの角度[deg]
+kFollowAngle       = 90.0              #探す範囲は正面のこの角度[deg]
 kGainLinear        = 0.4                #P制御比例ゲイン
 kKp                = 0.10               #PD制御ゲイン(回転)
 kKd                = 0.3                #
@@ -180,6 +180,8 @@ class Robot(Node):
         self.linear_speed = 0.0
         self.angular_speed = 0.0
         self.cmd_vel = self.zero_cmd_vel = Twist()
+        self.find_fuman_msg = Bool()
+        self.chaser_check_msg = Bool()
 
         #画像のサイズを超えて書き込もうとした際、その座標を中心からの座標に更新するための値
         self.displace_x = self.displace_y = 0.0
@@ -187,6 +189,7 @@ class Robot(Node):
         self.last_image_count = 0
 
         self.cmd_vel_pub = self.create_publisher(Twist, 'cmd_vel', 10)
+        self.chaser_check = self.create_publisher(Bool, 'chaser_check', 10)
         self.laser_sub = self.create_subscription(LaserScan, 'scan', self.laserCallback, qos_profile_sensor_data)
         self.odom_sub = self.create_subscription(Odometry, 'odom', self.odomCallback, 10)
         self.find_human_pub = self.create_publisher(Bool, 'find_human', 10)
@@ -775,9 +778,8 @@ class Robot(Node):
                     human_obj.image_pos.y = human_obj.image_expect_human_y
 
             else:
-                msg = Bool()
-                msg.data = False
-                self.find_human_pub.publish(msg)
+                self.find_fuman_msg.data = False
+                self.find_human_pub.publish(self.find_fuman_msg)
 
                 human_obj.distance = 999.0
                 human_obj.angle = 999.0
@@ -868,9 +870,14 @@ class Robot(Node):
         #グローバル使用宣言
         global lidar_image,g_find_leg_radius
         global human
-
-        if moveble == False: 
+        
+        # chaserが動作しているかパブリッシュ by Kanazawa(2023)
+        self.chaser_check_msg.data = moveble
+        if moveble == False:
+            self.move(0.0, 0.0)
+            self.chaser_check.publish(self.chaser_check_msg)
             return
+        self.chaser_check.publish(self.chaser_check_msg)
 
         #脚候補
         obj = [Object() for i in range(0,100)]
@@ -890,9 +897,8 @@ class Robot(Node):
 
         #見つけた人の位置に丸を描写
         cv2.circle(lidar_image,(int(human.image_pos.x),int(human.image_pos.y)),5,green,2)
-        msg = Bool()
-        msg.data = True
-        self.find_human_pub.publish(msg)
+        self.find_fuman_msg.data = True
+        self.find_human_pub.publish(self.find_fuman_msg)
 
         #この回数だけ連続して失敗すると検出範囲を拡大
         lost_count_max = 1
@@ -1078,9 +1084,9 @@ def main():
  
         if robot.follow_command == "start":
             robot.followHuman(lidar_erode_image,True)
+            robot.showWindow()
         elif robot.follow_command == "stop":
             robot.followHuman(lidar_erode_image,False)
 
-        robot.showWindow()
         time.sleep(loop_rate)
         cut+=1
