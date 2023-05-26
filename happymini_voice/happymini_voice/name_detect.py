@@ -46,7 +46,7 @@ class NameDetectServer(Node):
             if all_sim > best_sim:
                 best_sim = all_sim
                 best_word = word
-        if best_sim > 75:
+        if best_sim > 70:
             srv_res.result = best_word
         print("Best Word:", srv_res.result)
         print("Similarity:", best_sim)
