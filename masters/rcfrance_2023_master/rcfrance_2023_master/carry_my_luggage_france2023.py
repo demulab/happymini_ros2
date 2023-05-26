@@ -116,40 +116,43 @@ class Chaser(smach.State):
         self.twist_pub = self.node.create_publisher(Twist, 'cmd_vel', 10)
         self.node.create_subscription(Bool, 'find_human', self.find_human_callback, 10)
         self.node.create_subscription(Twist, 'cmd_vel', self.cmd_vel_callback, 10)
+        self.node.create_subscription(Bool, 'chaser_check', self.chaser_check_callback, 10)
         # Timer
-        self.timer = self.node.create_timer(0.1, self.timer_callback)
+        self.timer = self.node.create_timer(0.01, self.timer_callback)
         # Value
         self.chaser_msg = String()
         self.twist_value = Twist()
-        self.sub_linear_x = 999.9  # サブスクライブした値
+        self.sub_linear_x = 999.9
+        self.sub_angular_z = 999.9
         self.find_human_flg = False
+        self.chaser_check_flg = False
 
     def timer_callback(self):
-        if self.chaser_msg.data == 'start' or self.chaser_msg.data == 'stop':
-            self.follow_pub.publish(self.chaser_msg)
-        elif self.chaser_msg == 'stop_vel':
-            self.twist_value.linear.x = 0.0
-            self.twist_value.angular.z = 0.0
-            self.twist_pub.publish(self.twist_value)
-        else:
-            pass
+        self.follow_pub.publish(self.chaser_msg)
 
     def find_human_callback(self, receive_msg):
         self.find_human_flg = receive_msg.data
 
     def cmd_vel_callback(self, receive_msg):
         self.sub_linear_x = receive_msg.linear.x
+        self.sub_angular_z = receive_msg.angular.z
+
+    def chaser_check_callback(self, receive_msg):
+        self.chaser_check_flg = receive_msg.data
 
     def execute(self, userdata):
         self.chaser_msg.data = 'start'
         start_time = 0.0
+        time_counter = 0.0
         while rclpy.ok():
             rclpy.spin_once(self.node, timeout_sec=0.1)
-            if self.sub_linear_x == 0.0 and self.chaser_msg.data == 'start' and time_counter > 5.0:
+            if self.sub_linear_x == 0.0 and self.chaser_check_flg and time_counter > 5.0:
                 self.logger.info("Is this the location of a car?")
                 _ = self.node.tts('Is this the location of a car?')
                 self.logger.info("Doing /stt")
-                response = self.node.stt()
+                response = self.node.stt(cmd='yes_no')
+                if response == 'yes':
+                    break
                 self.logger.info(f"{response}")
             elif self.sub_linear_x == 0.0 and start_time != 0.0:
                 time_counter = time.time() - start_time
@@ -158,21 +161,13 @@ class Chaser(smach.State):
             else:
                 time_counter = 0.0
                 start_time = 0.0
-            self.logger.info(f"{time_counter}")
-                
-            #self.logger.info(f"{self.find_human_flg}")
-            
+            self.logger.info(f"{time_counter}")               
+        # 止まるまで待つ
+        self.logger.info("Stopping Chaser ...")
+        while self.chaser_check_flg and rclpy.ok():
+            rclpy.spin_once(self.node, timeout_sec=0.1)
+            self.chaser_msg.data = 'stop'
         return 'stop'
-
-
-class VoiceRecognition(smach.State):
-    def __init__(self, node):
-        smach.State.__init__(
-                self,
-                outcomes=['None', 'stop_follow'])
-
-    def execute(self, userdata):
-        return 'stop_follow'
 
 
 class GiveBag(smach.State):
@@ -190,8 +185,10 @@ class Return(smach.State):
         smach.State.__init__(
                 self,
                 outcomes=['success'])
+        self.node = node
 
     def execute(self, userdata):
+        self.node.tts('Fuckin bich')
         return 'success'
 
 
@@ -219,15 +216,15 @@ class CarryMyLuggage(Node):
             self.get_logger().info("/tts service call failed")
             return False
 
-    def stt(self):
+    def stt(self, cmd):
         # msg
-        self.stt_msg.tex = 'tmp'
+        self.stt_msg.cmd = cmd
         # Request
         stt_srv_future = self.stt_srv.call_async(self.stt_msg)
         while not stt_srv_future.done() and rclpy.ok():
             rclpy.spin_once(self, timeout_sec=0.1)
         if stt_srv_future.result() is not None:
-            return stt_srv_future.result()
+            return stt_srv_future.result().result
         else:
             self.get_logger().info("/stt service call failed")
             return False
@@ -251,11 +248,7 @@ class CarryMyLuggage(Node):
                     remapping={'left_right_in':'left_right'})
             smach.StateMachine.add(
                     'CHASER', Chaser(self),
-                    transitions={'stop':'VOICE_RECOGNITION'})
-            smach.StateMachine.add(
-                    'VOICE_RECOGNITION', VoiceRecognition(self),
-                    transitions={'None':'CHASER',
-                                 'stop_follow':'GIVE_BAG'})
+                    transitions={'stop':'GIVE_BAG'})
             smach.StateMachine.add(
                     'GIVE_BAG', GiveBag(self),
                     transitions={'finished':'RETURN'})
