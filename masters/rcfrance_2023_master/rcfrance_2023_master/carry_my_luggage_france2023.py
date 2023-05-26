@@ -5,6 +5,8 @@ from rclpy.action import ActionClient
 import smach
 from std_msgs.msg import String, Bool
 from geometry_msgs.msg import Twist
+# Module
+from happymini_manipulation.motor_controller import JointController
 # Custom msg
 from happymini_msgs.action import GraspBag
 from happymini_msgs.srv import TextToSpeech, SpeechToText
@@ -48,7 +50,6 @@ class DetectPose(smach.State):
                 tmp_time = time_count
 
     def execute(self, userdata):
-        return 'detected'
         self.get_pose()
         userdata.left_right_out = self.hand_pose
         if self.timeout_flg:
@@ -88,14 +89,13 @@ class GraspBagState(smach.State):
         self.get_result_future.add_done_callback(self.get_result_callback)
 
     def get_result_callback(self, future):
-        result = future.result().result.result
-        self.logger.info(f"Result: {result}")
+        self.result = future.result().result.result
+        self.logger.info(f"Result: {self.result}")
 
     def feedback_callback(self, feedback_msg):
         self.logger.info(feedback_msg.feedback.state)
 
     def execute(self, userdata):
-        return 'success'
         self.logger.info(f"(left_right, <{userdata.left_right_in}>)")
         self.send_goal(userdata.left_right_in)
         while not self.result:
@@ -175,8 +175,17 @@ class GiveBag(smach.State):
         smach.State.__init__(
                 self,
                 outcomes=['finished'])
+        # Node
+        self.node = node
+        # Module
+        self.arm = JointController()
 
     def execute(self, userdata):
+        self.arm.give()
+        self.node.tts('Here you are.')
+        time.sleep(5.0)
+        self.arm.start_up()
+        self.node.tts('No problem.')
         return 'finished'
 
 
