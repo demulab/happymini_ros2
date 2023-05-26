@@ -23,10 +23,10 @@ class BagLocalizationServer(Node):
                     ('up_down', Parameter.Type.STRING),
                     ('estimation.dispersion', Parameter.Type.DOUBLE)])
         # get Params
-        lrf_type = self.get_parameter('LRF_TYPE').value
+        self.lrf_type = self.get_parameter('LRF_TYPE').value
         up_down = self.get_parameter('up_down').value
         # Module
-        self.sds_node = ScanDataSensing(lrf_type, up_down)
+        self.sds_node = ScanDataSensing(self.lrf_type, up_down)
         # Value
         self.search_range_data = []
         self.scan_custom_range = 999.9
@@ -93,13 +93,22 @@ class BagLocalizationServer(Node):
         result_dict['bag_center'] = bag_range[self.sds_node.round_half_up(len(bag_range)/2 - 1)]
         return result_dict
     
-    def range_to_angle(self, left_right, bag_dict):
-        if left_right == 'right':
-            angle_to_bag =  bag_dict['bag_center'] - (len(self.search_range_data) - 1)
-        elif left_right == 'left':
-            angle_to_bag = bag_dict['bag_center']
-        else:
-            angle_to_bag = bag_dict['bag_center'] - self.sds_node.scan_custom_center
+    def range_to_angle(self, left_right, bag_dict): 
+        if self.lrf_type == 'UTM-30LX':
+            if left_right == 'right' or left_right == 'all':
+                angle_to_bag = bag_dict['bag_center'] - self.sds_node.scan_custom_center
+            elif left_right == 'left':
+                angle_to_bag = self.sds_node.scan_custom_center - bag_dict['bag_center']
+            else:
+                pass
+        elif self.lrf_type == 'LDS-01':
+            if left_right == 'right':
+                angle_to_bag =  bag_dict['bag_center'] - (len(self.search_range_data) - 1)
+            elif left_right == 'left':
+                angle_to_bag = bag_dict['bag_center']
+            else:
+                angle_to_bag = bag_dict['bag_center'] - self.sds_node.scan_custom_center
+        angle_to_bag *= self.sds_node.scan_increment
         distance_to_bag = self.sds_node.scan_custom_data[bag_dict['bag_center']]
         self.get_logger().info(f"Angle to bag >>> {angle_to_bag}")
         self.get_logger().info(f"Distance to bag >>> {distance_to_bag}")

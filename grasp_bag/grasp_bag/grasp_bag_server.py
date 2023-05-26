@@ -61,7 +61,7 @@ class GraspBagServer(Node):
         self.get_logger().info("Executing grasp_bag_action_server ...")
         self.jc_node.start_up()
         # 1段階目
-        bag_info = self.blc_node.request_send(left_right, scan_range=60)
+        bag_info = self.blc_node.request_send(left_right, scan_range=70)
         #bag_info = self.bl_srv_request_send(left_right)
         feedback_msg = GraspBag.Feedback()
         feedback_msg.state = "Estimating bag location ..."
@@ -69,11 +69,11 @@ class GraspBagServer(Node):
         self.get_logger().info(f"Bag info >>> {bag_info}")
         self.bc_node.rotate_angle(bag_info['angle_to_bag'])
         time.sleep(1.0)
-        self.bc_node.translate_dist((bag_info['distance_to_bag'] - 0.35)/2, 0.1)
+        self.bc_node.translate_dist((bag_info['distance_to_bag'] - 0.25)/2, 0.1)
         # 2段階目
         feedback_msg.state = "Re: Estimating bag location ..."
         goal_handle.publish_feedback(feedback_msg)
-        bag_info = self.blc_node.request_send('all')
+        bag_info = self.blc_node.request_send('all', 100)
         #bag_info = self.bl_srv_request_send('all')
         self.get_logger().info(f"Bag info >>> {bag_info}")
         self.bc_node.rotate_angle(bag_info['angle_to_bag'])
