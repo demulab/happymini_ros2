@@ -2,7 +2,8 @@ import rclpy
 from rclpy.node import Node
 import cv2
 import mediapipe as mp
-from std_msgs.msg import String, Image
+from std_msgs.msg import String
+#from std_msgs.msg import Image
 import logging
 import pyrealsense2 as rs
 import numpy as np
@@ -25,18 +26,18 @@ class HandPosePublish(Node):
         super().__init__('detect_left_right')
         self.pub = self.create_publisher(String, 'hand', 10)  
         self.way = self.create_publisher(String, '/way', 10)
-        self.timer = self.create_timer(0.01, self.timer_callback)
+        self.timer = self.create_timer(0.05, self.timer_callback)
         # pipe
         self.pipeline = rs.pipeline()
         self.config = rs.config()
         self.config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8,30)
         self.pipeline.start(self.config)
         # realsense
-        self.subscription = self.create_subscription(
-                Image,
-                'image_raw',
-                self.image_callback,
-                qos_profile_sensor_data)
+        #self.subscription = self.create_subscription(
+        #        Image,
+        #        'image_raw',
+        #        self.image_callback,
+        #        qos_profile_sensor_data)
   
     def timer_callback(self):
         msg = String()

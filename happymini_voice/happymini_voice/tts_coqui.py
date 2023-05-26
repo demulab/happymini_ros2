@@ -1,9 +1,13 @@
-import rclpy
-from rclpy.node import Node
-from happymini_msgs.srv import TextToSpeech
+import os
+from ament_index_python.packages import get_package_share_directory
 from TTS.api import TTS
 import wave
 import pyaudio
+import rclpy
+from rclpy.node import Node
+# Custom msg
+from happymini_msgs.srv import TextToSpeech
+
 
 
 class TTSCoqui(Node):

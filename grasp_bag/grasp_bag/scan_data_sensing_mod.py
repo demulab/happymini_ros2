@@ -47,24 +47,30 @@ class ScanDataSensing(Node):
     def scan_params(self):
         scan_index_sum = len(self.scan_custom_data)
         self.scan_custom_center = self.round_half_up(scan_index_sum/2)
-        self.get_logger().info(f"Number of scan data >>> {scan_index_sum}")
-        self.get_logger().info(f"Center of scan index >>> {self.scan_custom_center}")
-        self.get_logger().info(f"Degree per step >>> {self.scan_increment}")
+        self.get_logger().info(f"Number of scan data: {scan_index_sum}")
+        self.get_logger().info(f"Center of scan index: {self.scan_custom_center}")
+        self.get_logger().info(f"Degree per step: {self.scan_increment}")
 
     def scan_range_set(self, deg):
         self.scan_check()
         local_scan_data = self.scan_data
         target_range = self.deg_to_index(deg)
-        max_index = int(target_range / 2)  # 残すデータの終了位置
-        min_index = 360 - max_index  # 残すデータの開始位置(時計回り)
-        del local_scan_data[max_index + 1 : min_index]  # 必要なデータ以外削除
         # LRFによってリスト調整
         if self.lrf_info['LRF_TYPE'] == 'LDS-01':  # 中心からスキャンしてるので入れ替え
+            max_index = int(target_range / 2)  # 残すデータの終了位置
+            min_index = 360 - max_index  # 残すデータの開始位置(時計回り)
+            del local_scan_data[max_index + 1 : min_index]  # 必要なデータ以外削除
             tmp_list = local_scan_data[0 : max_index + 1]
             del local_scan_data[0 : max_index + 1]
             local_scan_data.extend(tmp_list)
             self.scan_custom_data = self.scan_zero_change(local_scan_data)
         elif self.lrf_info['LRF_TYPE'] == 'UTM-30LX':
+            delete_range = int((len(local_scan_data) - target_range) / 2)
+            if delete_range == 0:
+                pass
+            else:
+                del local_scan_data[0 : delete_range + 1]
+                del local_scan_data[target_range + 1:]
             self.scan_custom_data = local_scan_data
         else:
             self.get_logger().info(f"'{self.lrf_info['LRF_TYPE']}' not supported")
@@ -106,10 +112,9 @@ class ScanDataSensing(Node):
             plt.vlines(estimate_result['bag_center'], 0, 4, color='green', linestyles='dotted', label='Center of object')
         else:
             pass
-        plt.legend()
+        plt.legend()  # 凡例表示
         plt.show()
-        #if plt.waitforbuttonpress():
-        #    plt.close()
+        self.scan_index_list.clear()
 
 
 def main():
