@@ -14,8 +14,8 @@ class NameDetectServer(Node):
         self.create_service(NameDetect, 'nd', self.calculate_similarity)
 
     def calculate_similarity(self, srv_req, srv_res):
-        target_word = srv_req.text
-        word_list = ["app", "applepi", "apple", "airport", "applle"]
+        target_word = srv_req.text.lower()
+        word_list = ["amelia", "angel", "ava", "charlie", "charlotte", "hunter", "max", "mia", "olivia", "parker", "sam", "jack", "noah", "thomas", "whilliam"]
 
         print("Target Word:", target_word)
         
@@ -34,7 +34,7 @@ class NameDetectServer(Node):
             levenshtein_sim = 100 - (levenshtein_dist / max(len(target_word), len(word))) * 100
             jaccard_sim = (1 - jaccard_dist) * 100
             cosine_sim = (1 - cosine_dist) * 100
-            all_sim = levenshtein_sim * 0.4+ jaccard_sim * 0.2 + cosine_sim * 0.4
+            all_sim = levenshtein_sim * 0.2+ jaccard_sim * 0.1 + cosine_sim * 0.7
             
             print("Word:", word)
             print("Levenshtein Similarity:", levenshtein_sim)
@@ -46,9 +46,10 @@ class NameDetectServer(Node):
             if all_sim > best_sim:
                 best_sim = all_sim
                 best_word = word
-        if best_sim > 80:
+        if best_sim > 75:
             srv_res.result = best_word
         print("Best Word:", srv_res.result)
+        print("Similarity:", best_sim)
         return srv_res
 
 

@@ -12,9 +12,9 @@ class TestClient(Node):
         self.stt_srv_req = SpeechToText.Request()
         self.nd_srv_req = NameDetect.Request()
 
-    def stt_send_request(self, tex='start'):
+    def stt_send_request(self, cmd='start'):
         stt_srv_result = 'None'
-        self.stt_srv_req.tex = 'start'
+        self.stt_srv_req.cmd = cmd
 
         stt_srv_future = self.stt_srv.call_async(self.stt_srv_req)
         while not stt_srv_future.done() and rclpy.ok():
