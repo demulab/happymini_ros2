@@ -3,7 +3,7 @@
 
 # 依存関係
 ```bash  
-pip3 install requirements.txt
+pip3 install -r requirements.txt
 ```  
 
 # 実行方法
