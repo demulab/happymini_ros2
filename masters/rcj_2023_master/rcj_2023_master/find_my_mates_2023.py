@@ -7,7 +7,7 @@ from std_msgs.msg import String
 import time
 #from happymini_manipulation.motor_controller import JointController
 
-from airobot_interfaces.srv import StringCommand
+from happymini_msgs.srv import StringCommand, TextToSpeech
 from happymini_navigation.navi_location import WayPointNavi
 import playsound
 import wave
@@ -48,11 +48,11 @@ class Navigation(Node):
 
     def execute(self):
         #self.wp_node.set_params()
-        self.wp_node.navigation_execute('start_cml')
+        self.wp_node.navigation_execute('fmm_find')
         time.sleep(2)
 
     def execute2(self):
-        self.wp_node.navigation_execute('start_fmm')
+        self.wp_node.navigation_execute('fmm_Operator')
         time.sleep(2)
     
     def execute3(self):
@@ -62,12 +62,27 @@ class Navigation(Node):
 class HitoSekkin(Node):
     def __init__(self):
         super().__init__('test_hitosekkin')
-        self.pub = self.create_publisher(String, 'master', 10)
+        self.app_srv = self.create_client(TextToSpeech, 'app')
+        while not self.app_srv.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info("Message is not here ...")
+        self.app_srv_req = TextToSpeech.Request()
+        #self.pub = self.create_publisher(String, 'master', 10)
 
     def execute(self):
-        msg = String()
-        msg.data = 'start'
-        self.pub.publish(msg)
+        self.app_srv_req.text = 'start'
+        
+        app_srv_future = self.app_srv.call_async(self.app_srv_req)
+        while not app_srv_future.done() and rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.1)
+            print('while')
+        print('out while')
+        if app_srv_future.result() is not None:
+            app_srv_result = app_srv_future.result().result
+            print(app_srv_result)
+            return app_srv_result
+        else:
+            self.get_logger().info(f"Service call failed")
+            return None
 
 class Speech(Node):
     def __init__(self):
@@ -83,11 +98,14 @@ class Speech(Node):
         self.future = self.client.call_async(self.req)
         rclpy.spin_until_future_complete(self.node, self.future)
 
-        if future.result() is not None:
-            response = future.result()
+        while not self.future.done() and rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.1)
+        if self.future.result() is not None:
+            response = self.future.result()
             self.get_logger().info('応答: ' + response.answer)
         else:
            self.get_logger().info('サービスが応答しませんでした。')
+        return response.answer_name
             
     
 def main():
@@ -97,11 +115,13 @@ def main():
     hi = HitoSekkin()
     sp = Speech()
     try:
-        #nb.execute()
-        #hi.execute()
+        nb.execute()
+        hi.execute()
+        name = sp.execute()
+        nb.execute2()
+        time.sleep(1.0)
         #sp.execute()
-        #nb.execute2()
-        sp.execute()
+        synthesis2("Name is " + name)
         synthesis2("Finish, find my mates.")
     except KeyboardInterrupt:
         pass
