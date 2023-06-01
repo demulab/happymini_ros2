@@ -46,9 +46,9 @@ class Navigation(Node):
         super().__init__('test_navigation')
         self.wp_node = WayPointNavi()
 
-    def execute(self):
+    def execute(self, waypoint :str):
         #self.wp_node.set_params()
-        self.wp_node.navigation_execute('fmm_find')
+        self.wp_node.navigation_execute(waypoint)
         time.sleep(2)
 
     def execute2(self):
@@ -56,7 +56,7 @@ class Navigation(Node):
         time.sleep(2)
     
     def execute3(self):
-        self.wp_node.navigation_execute('goal_car1')
+        self.wp_node.navigation_execute('fmm_fimd2')
         time.sleep(2)
 
 class HitoSekkin(Node):
@@ -115,13 +115,26 @@ def main():
     hi = HitoSekkin()
     sp = Speech()
     try:
-        nb.execute()
+        #1人目
+        nb.execute('fmm_find')
         hi.execute()
         name = sp.execute()
-        nb.execute2()
+        nb.execute('fmm_Operator')
         time.sleep(1.0)
         #sp.execute()
         synthesis2("Name is " + name)
+
+        #2人目
+        nb.execute('fmm_find2')
+        hi.execute()
+        name = sp.execute()
+        nb.execute('fmm_Operator')
+        time.sleep(1.0)
+        #sp.execute()
+        synthesis2("Name is " + name)
+
+        # 3人目今後やる
+
         synthesis2("Finish, find my mates.")
     except KeyboardInterrupt:
         pass
