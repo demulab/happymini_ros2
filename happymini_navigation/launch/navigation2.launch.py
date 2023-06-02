@@ -9,30 +9,49 @@ from launch.actions import IncludeLaunchDescription
 from launch_ros.actions import Node
 
 def generate_launch_description():
-    # turtlebot3_navigation2 launch file
+    use_sim_time = LaunchConfiguration('use_sim_time', default='false')
+    # turtlebot3_navigation2 launch path
     turtlebot3_navigation2_launch = os.path.join(
             get_package_share_directory('turtlebot3_navigation2'), 'launch')
     
-    # location param
-    yaml_path = os.path.join(
-            get_package_share_directory('happymini_navigation'), 
-            'location',
-            'demulab_map.yaml')
+    # map
+    map_dir = LaunchConfiguration(
+            'map',
+            default=os.path.join(
+                get_package_share_directory('happymini_navigation'),
+                'maps',
+                'map.yaml'))
+
+    # location yaml path
+    location_dir = LaunchConfiguration(
+            'locations',
+            default=os.path.join(
+                get_package_share_directory('happymini_navigation'), 
+                'location',
+                'test_navi_map.yaml'))
 
     return LaunchDescription([
         DeclareLaunchArgument(
-            name='yaml',
-            default_value=yaml_path,
-            description='Full path to the location params YAML file'),
+            name='map',
+            default_value=map_dir,
+            description='Path to map file to load'),
+
+        DeclareLaunchArgument(
+            name='locations',
+            default_value=location_dir,
+            description='Path to the location params YAML file'),
 
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource([
-                turtlebot3_navigation2_launch + '/navigation2.launch.py'])
+                turtlebot3_navigation2_launch + '/navigation2.launch.py']),
+            launch_arguments={
+                'map': map_dir,
+                'use_sim_time': use_sim_time}.items(),
         ),
 
         Node(
             package='happymini_navigation',
             executable='navi_location',
-            arguments=[yaml_path],
+            arguments=[location_dir],
             output='screen'),
         ])

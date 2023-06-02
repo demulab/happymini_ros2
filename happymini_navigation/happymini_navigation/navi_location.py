@@ -30,18 +30,18 @@ class WayPointNavi(Node):
         self.navi_location_srv = self.create_service(NaviLocation, 'navi_location_server', self.navigation_execute)
         self.get_logger().info("Ready to set /navi_location_srever")
         # YAML
-        #self.yaml_path = sys.argv[1]
-        self.yaml_path = os.path.join(
-                get_package_share_directory('happymini_navigation'), 'location', 'demulab1.yaml')
+        self.yaml_path = sys.argv[1]
         self.get_logger().info(f"Load the following YAML file: {self.yaml_path}")
         # Value
         self.navigation_flg = False
         self.location_name = None
         self.location_dict = {}
         self.param_namespace = 'location_params'
+        # Set params
+        self.set_params()
 
     def set_params(self):
-       #self.load_yaml()
+        # Open yaml
         with open(self.yaml_path) as f:
             self.location_dict = yaml.safe_load(f)
         # Set param
@@ -110,35 +110,30 @@ class WayPointNavi(Node):
         self.get_logger().info(f"To Goal >>> {self.feedback.distance_remaining:.2f} [m]")
 
     def cancel_goal(self):
-        self.get_logger().info('No.{}をキャンセルします．')
+        self.get_logger().info('Cancel No.{}．')
         if self.result_future:
             future = self.goal_handle.cancel_goal_async()
             rclpy.spin_until_future_complete(self, future)
 
-    def navigation_execute(self, location_name):#, srv_req, srv_res):
+    def navigation_execute(self, srv_req, srv_res):
         self.navigation_flg = False
-        send_goal_flg = True #unnko
-        self.set_params()
-        location_coordinate = self.search_location_param(location_name)
+        send_goal_flg = True
+        location_coordinate = self.search_location_param(srv_req.location_name)
         if location_coordinate:
             goal = self.set_pose(location_coordinate)
             send_goal_flg = self.send_goal(goal)
-            print(send_goal_flg)
         while not self.navigation_flg and send_goal_flg and rclpy.ok():
-            time.sleep(0.5)
-            rclpy.spin_once(self)
-        #srv_res.result = self.navigation_flg and send_goal_flg
-        #self.get_logger().info(f"srv_res >>> {srv_res.result}")
-        #return srv_res
-        result = self.navigation_flg and send_goal_flg
-        return result
-
+            rclpy.spin_once(self, timeout_sec=0.5)
+        srv_res.result = self.navigation_flg and send_goal_flg
+        self.get_logger().info(f"srv_res >>> {srv_res.result}")
+        return srv_res
 
 def main(args=None):
     rclpy.init(args=args)
     waypoint_navi = WayPointNavi()
-    #waypoint_navi.set_params()
-    waypoint_navi.navigation_execute('fmm_Operator')
-    #rclpy.spin(waypoint_navi)
+    try:
+        rclpy.spin(waypoint_navi)
+    except KeyboardInterrupt:
+        pass
     waypoint_navi.destroy_node()
     rclpy.shutdown()
