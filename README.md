@@ -5,9 +5,24 @@
 2. fmm_find1 : 一人目の探索位置
 3. fmm_find2 : 二人目の探索位置
 
+### マップを新規作成する場合
+```bash
+ros2 launch turtlebot3_cartographer cartographer.launch.py
+```
 
+```bash
+ros2 run happymini_navigation set_location.py
+```
+その後、サービス呼び出しでウェイポイントを登録する。
 
-TODO
+### 既存のマップにウェイポイントを追加する場合
+```bash
+ros2 launch happymini_navigation navigation2.launch.py
+```
+```bash
+ros2 run happymini_navigation set_location.py
+```
+その後、サービス呼び出しでウェイポイントを登録する。
 
 ## 実行
 turtlebot3とlidarのポート権限付与
