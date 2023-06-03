@@ -29,6 +29,7 @@ setup(
             'object_detection = yolov5_ros2.object_detection:main',
             'object_detection_tf = yolov5_ros2.object_detection_tf:main',
             'object_detection_srv = yolov5_ros2.object_detection_srv:main',
+            'person_detector = yolov5_ros2.person_detector:main',
             'camera_suv = yolov5_ros2.camera_suv:main',
             'happymini_sekkin = yolov5_ros2.happymini_sekkin'
         ],
