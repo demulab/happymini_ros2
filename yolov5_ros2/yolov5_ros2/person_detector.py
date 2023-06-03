@@ -35,3 +35,13 @@ class PersonDetector(Node):
     def detectPerson(self, request : DetectPerson.Request, response : DetectPerson.Response) -> DetectPerson.Response:
         response.result = self.img
         return response
+
+def main(args=None):
+    rclpy.init(args=args)
+    persondetect_node = PersonDetector()
+    rclpy.spin(persondetect_node)
+    rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()
