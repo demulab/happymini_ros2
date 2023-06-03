@@ -132,6 +132,8 @@ class AttributeRecog(Node):
         
     
 def main():
+
+    
     rclpy.init()
     #synthesis2("Start, find my mates.")
     nb = Navigation()
