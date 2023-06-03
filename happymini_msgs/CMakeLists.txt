@@ -17,6 +17,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     "srv/SpeechToText.srv"
     "srv/NameDetect.srv"
     "srv/StringCommand.srv"
+    "srv/AttributeRecognition.srv"
+    "srv/DetectPerson.srv"
     "action/GraspBag.action"
     )
 

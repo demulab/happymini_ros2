@@ -1,22 +1,16 @@
 import rclpy
 from rclpy.node import Node
-#from rclpy.action import ActionClient
-from std_msgs.msg import String
 from sensor_msgs.msg import Image
+#from rclpy.action import ActionClient
 #from happymini_msgs.srv import BagLocalization
 #from happymini_msgs.action import GraspBag
 import time
 #from happymini_manipulation.motor_controller import JointController
-from rclpy.qos import qos_profile_sensor_data
-from happymini_msgs.srv import StringCommand, TextToSpeech
+from happymini_msgs.srv import StringCommand, TextToSpeech, AttributeRecognition, DetectPerson
 from happymini_navigation.navi_location import WayPointNavi
-from message_filters import Subscriber
-import playsound
-import wave
-import pyaudio
-import whisper
-import sys
 import pyttsx3
+from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
 
 def synthesis2(text = None):
     # 音声合成を行うことをloggerで表示します．
@@ -112,24 +106,45 @@ class Speech(Node):
 class AttributeRecog(Node):
     def __init__(self):
         super().__init__("attrib")
-        self.__recog_pub = self.create_publisher(Image, "/attribute_recognition", 10)
-        self.__attribute_result = ""
-        self.imagesub = self.create_subscription(Image, "camera/color/image_raw", self.recordImage, qos_profile_sensor_data)
-        self.attribres = self.create_subscription(String, "findmymates/attribute_sentence", self.recordAttributeResult, qos_profile_sensor_data)
+        self.node = rclpy.create_node('attrib_recog')
+        self.__client = self.node.create_client(AttributeRecognition, '/fmm_attrib_service/recognize')
+        self.__req = None
+        self.future = None 
 
-    def startRecognition(self):
-        self.__recog_pub.publish(self.__img_msg)
-        
-    def recordImage(self, msg : Image) -> None:
-        self.__img_msg = msg
+    def execute(self) -> str:
+        self.__req = AttributeRecognition.Request()
+        self.future = self.__client.call_async(self.__req)
+        rclpy.spin_until_future_complete(self.node, self.future)
 
-    def recordAttributeResult(self, msg : String) -> None:
-        self.__attribute_result = msg.data
+        while not self.future.done() and rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.1)
+        if self.future.result() is not None:
+            response = self.future.result()
+        else:
+           self.get_logger().info('サービスが応答しませんでした。')
+        return response.result
 
-    def getAttributeResult(self) -> str:
-        return self.__attribute_result.data
-    
-        
+class PersonDetector(Node):
+    def __init__(self):
+        super().__init__("person")
+        self.node = rclpy.create_node('person_recog')
+        self.__client = self.node.create_client(DetectPerson, '/fmm_person_service/detect')
+        self.__req = None
+        self.future = None 
+
+    def execute(self) -> Image:
+        self.__req = DetectPerson.Request()
+        self.future = self.__client.call_async(self.__req)
+        rclpy.spin_until_future_complete(self.node, self.future)
+
+        while not self.future.done() and rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.1)
+        if self.future.result() is not None:
+            response = self.future.result()
+        else:
+           self.get_logger().info('サービスが応答しませんでした。')
+        return response.result    
+
     
 def main():
     rclpy.init()
@@ -138,19 +153,21 @@ def main():
     hi = HitoSekkin()
     sp = Speech()
     at = AttributeRecog()
+    per = PersonDetector()
+    
     try:
         #1人目
         nb.execute('fmm_find')
         time.sleep(1.0)
         hi.execute()
         name = sp.execute()
-        at.startRecognition()
+        img = per.execute()
         nb.execute('fmm_Operator')
         time.sleep(1.0)
         time.sleep(1.0)
         sp.execute()
         synthesis2("Name is " + name)
-        attribute_sentence = at.getAttributeResult()
+        attribute_sentence = at.execute()
         synthesis2(attribute_sentence)
         
         ##2人目
@@ -158,12 +175,12 @@ def main():
         time.sleep(1.0)
         hi.execute()
         name = sp.execute()
-        at.startRecognition()
+        img = per.execute()
         nb.execute('fmm_Operator')
         time.sleep(1.0)
         sp.execute()
         synthesis2("Name is " + name)
-        attribute_sentence = at.getAttributeResult()
+        attribute_sentence = at.execute()
         synthesis2(attribute_sentence)
 
         # 3人目今後やる
