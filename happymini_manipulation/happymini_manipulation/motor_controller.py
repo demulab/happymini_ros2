@@ -86,7 +86,7 @@ class JointController(Node):
         self.publish_joint(self.joint_angle_list, 2)
 
     def start_up(self):
-        self.joint_angle_list = [0.0, -90, 90, 0.0, -90]
+        self.joint_angle_list = [90, -90, 90, 0.0, -90]
         self.publish_joint(self.joint_angle_list)
 
     
@@ -96,8 +96,8 @@ def main():
     rclpy.init()
     jc_node = JointController()
     #jc_node.send_goal()
-    #jc_node.start_up()
-    jc_node.manipulation([0.3, 0.5])
+    jc_node.start_up()
+    #jc_node.manipulation([0.3, 0.5])
     #jc_node.manipulation([0.3, 0.4])
     #jc_node.gripper(False)
     #jc_node.manipulation([0.3, 0.45])

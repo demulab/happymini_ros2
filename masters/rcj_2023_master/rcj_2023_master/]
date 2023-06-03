@@ -110,31 +110,28 @@ class Speech(Node):
     
 def main():
     rclpy.init()
-    #synthesis2("Start, find my mates.")
+    synthesis2("Start, find my mates.")
     nb = Navigation()
-    #hi = HitoSekkin()
-    #sp = Speech()
+    hi = HitoSekkin()
+    sp = Speech()
     try:
         #1人目
-        #nb.execute('fmm_find')
-        time.sleep(1.0)
-        #hi.execute()
-        #name = sp.execute()
-        #nb.execute('fmm_Operator')
-        time.sleep(1.0)
-        #time.sleep(1.0)
-        ##sp.execute()
-        #synthesis2("Name is " + name)
-
-        ##2人目
-        nb.execute('fmm_find2')
-        time.sleep(1.0)
+        nb.execute('fmm_find')
         #hi.execute()
         #name = sp.execute()
         nb.execute('fmm_Operator')
         #time.sleep(1.0)
         ##sp.execute()
-        #synthesis2("Name is " + name)
+        synthesis2("Name is " + name)
+
+        #2人目
+        nb.execute('fmm_find2')
+        hi.execute()
+        name = sp.execute()
+        nb.execute('fmm_Operator')
+        time.sleep(1.0)
+        #sp.execute()
+        synthesis2("Name is " + name)
 
         # 3人目今後やる
 
