@@ -17,7 +17,7 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 
 from yolov5_ros2.detector import Detector, parse_opt
-from airobot_interfaces.srv import StringCommand
+from happymini_msgs.srv import StringCommand
 
 
 class ObjectDetection(Node):

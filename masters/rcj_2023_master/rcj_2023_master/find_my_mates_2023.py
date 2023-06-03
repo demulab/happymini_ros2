@@ -148,7 +148,7 @@ class PersonDetector(Node):
     
 def main():
     rclpy.init()
-    #synthesis2("Start, find my mates.")
+    synthesis2("Start, find my mates.")
     nb = Navigation()
     hi = HitoSekkin()
     sp = Speech()
@@ -163,7 +163,6 @@ def main():
         name = sp.execute()
         img = per.execute()
         nb.execute('fmm_Operator')
-        time.sleep(1.0)
         time.sleep(1.0)
         sp.execute()
         synthesis2("Name is " + name)

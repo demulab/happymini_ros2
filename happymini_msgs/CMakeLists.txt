@@ -8,6 +8,7 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
+find_package(sensor_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
     "srv/BagLocalization.srv"
@@ -20,6 +21,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     "srv/AttributeRecognition.srv"
     "srv/DetectPerson.srv"
     "action/GraspBag.action"
+    DEPENDENCIES sensor_msgs
     )
 
 ament_export_dependencies(rosidl_default_runtime)
