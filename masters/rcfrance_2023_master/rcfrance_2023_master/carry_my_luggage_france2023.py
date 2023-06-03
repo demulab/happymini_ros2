@@ -9,6 +9,7 @@ from geometry_msgs.msg import Twist
 from happymini_manipulation.motor_controller import JointController
 # Custom msg
 from happymini_msgs.action import GraspBag
+from happymini_msgs.srv import NaviLocation
 from happymini_msgs.srv import TextToSpeech, SpeechToText
 
 
@@ -194,10 +195,28 @@ class Return(smach.State):
         smach.State.__init__(
                 self,
                 outcomes=['success'])
+        # Node
         self.node = node
+        self.logger = node.get_logger()
+        # Service
+        self.navi = node.create_client(NaviLocation, 'navi_location_server')
+        while not self.navi_location.wait_for_service(timeout_sec=1.0) and rclpy.ok():
+            self.logger.info("/navi_location_server is not here ...")
+        self.req = NaviLocation.Request()
 
     def execute(self, userdata):
-        self.node.tts('Fuckin bich')
+        self.req.location_name = 'ChairA'
+        # Call
+        future = self.navi.call_async(self.req)
+        # Waiting
+        while not future.done() and rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.1)
+        # Result
+        if future.result() is not None:
+            navi_result = future.result().result
+            return result
+        else:
+            self.logger.info(f"Service call failed")
         return 'success'
 
 

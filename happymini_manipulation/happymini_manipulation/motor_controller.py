@@ -55,6 +55,7 @@ class JointController(Node):
     def publish_joint(self, joint_angle, execute_time=2):
         #ljoint_angle[3] += self.wrist_param
         # deg => rad
+        print(joint_angle)
         joint_angle = list(map(math.radians, joint_angle))
         # メッセージの作成
         msg = JointTrajectory()
@@ -86,7 +87,7 @@ class JointController(Node):
         self.publish_joint(self.joint_angle_list)
 
     def start_up(self):
-        self.joint_angle_list = [0.0, -90, 90, 0.0, -90]
+        self.joint_angle_list = [90, -90, 90, 0.0, -90]
         self.publish_joint(self.joint_angle_list)
 
     
