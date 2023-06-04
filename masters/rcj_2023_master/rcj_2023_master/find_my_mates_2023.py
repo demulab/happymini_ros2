@@ -11,6 +11,8 @@ from happymini_navigation.navi_location import WayPointNavi
 import pyttsx3
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
+from cv_bridge import CvBridge
+import cv2
 
 def synthesis2(text = None):
     # 音声合成を行うことをloggerで表示します．
@@ -111,8 +113,9 @@ class AttributeRecog(Node):
         self.__req = None
         self.future = None 
 
-    def execute(self) -> str:
+    def execute(self, img : Image) -> str:
         self.__req = AttributeRecognition.Request()
+        self.__req.input = img
         self.future = self.__client.call_async(self.__req)
         rclpy.spin_until_future_complete(self.node, self.future)
 
@@ -130,7 +133,9 @@ class PersonDetector(Node):
         self.node = rclpy.create_node('person_recog')
         self.__client = self.node.create_client(DetectPerson, '/fmm_person_service/detect')
         self.__req = None
-        self.future = None 
+        self.future = None
+        self.__bridge = CvBridge()
+        self.__cnt = 0
 
     def execute(self) -> Image:
         self.__req = DetectPerson.Request()
@@ -141,6 +146,9 @@ class PersonDetector(Node):
             rclpy.spin_once(self, timeout_sec=0.1)
         if self.future.result() is not None:
             response = self.future.result()
+            img_cv = self.__bridge.imgmsg_to_cv2(response.result)
+            cv2.imwrite("~/main_ws/src/happymini_ros/masters/rcj_2023_master/img{0}.png".format(self.__cnt), img_cv)
+            self.__cnt += 1
         else:
            self.get_logger().info('サービスが応答しませんでした。')
         return response.result    
@@ -164,9 +172,8 @@ def main():
         img = per.execute()
         nb.execute('fmm_Operator')
         time.sleep(1.0)
-        sp.execute()
         synthesis2("Name is " + name)
-        attribute_sentence = at.execute()
+        attribute_sentence = at.execute(img)
         synthesis2(attribute_sentence)
         
         ##2人目
@@ -177,9 +184,8 @@ def main():
         img = per.execute()
         nb.execute('fmm_Operator')
         time.sleep(1.0)
-        sp.execute()
         synthesis2("Name is " + name)
-        attribute_sentence = at.execute()
+        attribute_sentence = at.execute(img)
         synthesis2(attribute_sentence)
 
         # 3人目今後やる

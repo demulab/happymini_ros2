@@ -91,7 +91,7 @@ class AttributeRecognizer:
         print(attrs)
         self.__attrInfo.storeAttributes(attrs)
 
-        result = "{0}.\n{1}.\n{2}.\n{3}.\n".format(self.__attrInfo.describeGender(), self.__attrInfo.describeAge(), self.__attrInfo.describeFasionStyle(), self.__attrInfo.describeClothDetails())
+        result = "{0}.\n{1}.\n{2}.\n.\n".format(self.__attrInfo.describeGender(), self.__attrInfo.describeFasionStyle(), self.__attrInfo.describeClothDetails())
         return result
 
 

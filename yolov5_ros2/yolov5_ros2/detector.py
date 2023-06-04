@@ -26,7 +26,7 @@ ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 # yolov5で用意されたモジュールを利用するためにやむなくこうしている．
 from models.common import DetectMultiBackend
 from utils.general import (check_img_size, check_imshow, check_requirements,
-                           non_max_suppression, print_args, scale_boxes)
+                           non_max_suppression, print_args, scale_coords)
 from utils.plots import Annotator, colors
 from utils.torch_utils import select_device
 from utils.augmentations import letterbox
@@ -130,7 +130,7 @@ class Detector:
 
         if len(det):
             # Rescale boxes from img_size to im0 size
-            det[:, :4] = scale_boxes(
+            det[:, :4] = scale_coords(
                 img.shape[2:], det[:, :4], img0.shape).round()
 
             # Print results
