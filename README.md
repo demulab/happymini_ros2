@@ -50,7 +50,7 @@ ros2 launch realsense2_camera rs_launch.py align_depth.enable:=true
 
 属性認識
 ```bash
-ros2 run attribute_recognition attribute_recog
+ros2 run attribute_recognition attribute_recog_node
 ```
 
 人認識、距離推定
