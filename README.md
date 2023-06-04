@@ -1,5 +1,5 @@
 # happymini_ros2
-# 開発中
+# find_my_mates 370点
 ## 設定
 以下3種のウエイポイントを登録する
 1. fmm_Operator : オペレータ開始位置
@@ -50,7 +50,7 @@ ros2 launch realsense2_camera rs_launch.py align_depth.enable:=true
 
 属性認識
 ```bash
-ros2 run attribute_recognition attribute_recognition_node
+ros2 run attribute_recognition attribute_recog
 ```
 
 人認識、距離推定
@@ -60,7 +60,7 @@ ros2 run yolov5_ros2 object_detection_tf
 
 人認識②
 ```bash
-ros2 run yolov5_ros2 person_detecto
+ros2 run yolov5_ros2 person_detector
 ```
 ※将来的に人認識はこれに変更する予定
 
