@@ -86,7 +86,7 @@ class JointController(Node):
         self.publish_joint(self.joint_angle_list)
 
     def start_up(self):
-        self.joint_angle_list = [0.0, -90, 90, 0.0, -90]
+        self.joint_angle_list = [90, -90, 90, 0.0, -90]
         self.publish_joint(self.joint_angle_list)
 
     
