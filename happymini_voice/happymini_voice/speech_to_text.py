@@ -76,9 +76,9 @@ class SpeechToTextServer(Node):
 
     def listen(self, srv_req, srv_res):
         self.get_logger().info(f"Command: {srv_req.cmd}")
-        model = whisper.load_model("medium",device="cpu") #medium
-        _ = model.half()
-        _ = model.cuda()
+        model = whisper.load_model("base",device="cpu") #GPU:medium CPU:base推奨
+        #_ = model.half() #GPUを使う場合はコメントアウトを外してください
+        #_ = model.cuda() #GPUを使う場合はコメントアウトを外してください
         for m in model.modules():
             if isinstance(m, whisper.model.LayerNorm):
                 m.float()
