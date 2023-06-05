@@ -28,17 +28,17 @@ class NameDetectServer(Node):
             word_vector = np.array([1 if ch in word else 0 for ch in sorted(set(target_word))]) # 修正点
             
             levenshtein_dist = edit_distance(target_word, word)
-            jaccard_dist = jaccard_distance(set(ngrams(target_word, 3)), set(ngrams(word, 3)))
+            #jaccard_dist = jaccard_distance(set(ngrams(target_word, 3)), set(ngrams(word, 3)))
             cosine_dist = cosine_distance(target_vector, word_vector)
             
             levenshtein_sim = 100 - (levenshtein_dist / max(len(target_word), len(word))) * 100
-            jaccard_sim = (1 - jaccard_dist) * 100
+            #jaccard_sim = (1 - jaccard_dist) * 100
             cosine_sim = (1 - cosine_dist) * 100
-            all_sim = levenshtein_sim * 0.2+ jaccard_sim * 0.1 + cosine_sim * 0.7
+            all_sim = levenshtein_sim * 0.2 + cosine_sim * 0.7
             
             print("Word:", word)
             print("Levenshtein Similarity:", levenshtein_sim)
-            print("Jaccard Similarity:", jaccard_sim)
+            #print("Jaccard Similarity:", jaccard_sim)
             print("Cosine Similarity:", cosine_sim)
             print("Similarity:", all_sim)
             print()
