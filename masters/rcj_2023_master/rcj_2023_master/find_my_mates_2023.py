@@ -6,7 +6,7 @@ from sensor_msgs.msg import Image
 #from happymini_msgs.action import GraspBag
 import time
 #from happymini_manipulation.motor_controller import JointController
-from happymini_msgs.srv import StringCommand, TextToSpeech, AttributeRecognition, DetectPerson
+from happymini_msgs.srv import StringCommand, SpeechToText, NameDetect, TextToSpeech, AttributeRecognition, DetectPerson
 from happymini_navigation.navi_location import WayPointNavi
 import pyttsx3
 from rclpy.callback_groups import ReentrantCallbackGroup
@@ -14,29 +14,87 @@ from rclpy.executors import MultiThreadedExecutor
 from cv_bridge import CvBridge
 import cv2
 
-def synthesis2(text = None):
-    # 音声合成を行うことをloggerで表示します．
-    print(f'音声合成を実行します')
-    print(f'発話内容は "{text}"')
+#def synthesis2(text = None):
+#    # 音声合成を行うことをloggerで表示します．
+#    print(f'音声合成を実行します')
+#    print(f'発話内容は "{text}"')
+#
+#    # 音声合成エンジンを初期化します．
+#    engine = pyttsx3.init()
+#
+#    # 言語を設定します．
+#    lang = "en-US"
+#    engine.setProperty('voice', lang)
+#    # rateは、1分あたりの単語数で表した発話速度。基本は、200です。
+#    rate = engine.getProperty("rate")
+#    engine.setProperty("rate",160)
+#
+#    # ボリュームは、0.0~1.0の間で設定します。
+#    volume = engine.getProperty('volume')
+#    engine.setProperty('volume',1.0)
+#
+#    # テキストを音声に合成します．
+#    engine.say(text)
+#
+#    engine.runAndWait()
 
-    # 音声合成エンジンを初期化します．
-    engine = pyttsx3.init()
+#新しい音声：Yes,Noではなく名前を聞く
+class TestClient(Node):
+    def __init__(self):
+        super().__init__('test_client')
+        self.stt_srv = self.create_client(SpeechToText, 'stt')
+        self.nd_srv = self.create_client(NameDetect, 'nd')
+        self.tts_srv = self.create_client(TextToSpeech, 'tts')
+        while not self.stt_srv.wait_for_service(timeout_sec=1.0) and self.nd_srv.wait_for_service(timeout_sec=1.0) and self.nd_srv.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info("Message is not here ...")
+        self.stt_srv_req = SpeechToText.Request()
+        self.nd_srv_req = NameDetect.Request()
+        self.tts_srv_req = TextToSpeech.Request()
 
-    # 言語を設定します．
-    lang = "en-US"
-    engine.setProperty('voice', lang)
-    # rateは、1分あたりの単語数で表した発話速度。基本は、200です。
-    rate = engine.getProperty("rate")
-    engine.setProperty("rate",160)
+    def stt_send_request(self, cmd='start'):
+        stt_srv_result = 'None'
+        self.stt_srv_req.cmd = cmd
 
-    # ボリュームは、0.0~1.0の間で設定します。
-    volume = engine.getProperty('volume')
-    engine.setProperty('volume',1.0)
+        stt_srv_future = self.stt_srv.call_async(self.stt_srv_req)
+        while not stt_srv_future.done() and rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.1)
+        if stt_srv_future.result() is not None:
+            stt_srv_result = stt_srv_future.result().result
+            print(stt_srv_result)
+            return stt_srv_result
+        else:
+            self.get_logger().info(f"Service call failed")
+            return None
 
-    # テキストを音声に合成します．
-    engine.say(text)
+    def nd_send_request(self, text=None):
+        nd_srv_result = 'None'
+        self.nd_srv_req.text = text
 
-    engine.runAndWait()
+        nd_srv_future = self.nd_srv.call_async(self.nd_srv_req)
+        while not nd_srv_future.done() and rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.1)
+        if nd_srv_future.result() is not None:
+            nd_srv_result = nd_srv_future.result().result
+            print(nd_srv_result)
+            return nd_srv_result
+        else:
+            self.get_logger().info(f"Service call failed")
+            return None
+
+    def tts_send_request(self, text=None):
+        tts_srv_result = 'None'
+        self.tts_srv_req.text = text
+
+        tts_srv_future = self.tts_srv.call_async(self.tts_srv_req)
+        while not tts_srv_future.done() and rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.1)
+        if tts_srv_future.result() is not None:
+            tts_srv_result = tts_srv_future.result().result
+            print(tts_srv_result)
+            return tts_srv_result
+        else:
+            self.get_logger().info(f"Service call failed")
+            return None
 
         
 class Navigation(Node):
@@ -82,28 +140,28 @@ class HitoSekkin(Node):
             self.get_logger().info(f"Service call failed")
             return None
 
-class Speech(Node):
-    def __init__(self):
-        super().__init__('test_speech') 
-        self.node = rclpy.create_node('fmm_client')
-        self.client = self.node.create_client(StringCommand, 'fmm_speech_service/wake_up')
-        self.req = None
-        self.future = None
-        
-    def execute(self):
-        time.sleep(1.0)
-        self.req = StringCommand.Request()
-        self.future = self.client.call_async(self.req)
-        rclpy.spin_until_future_complete(self.node, self.future)
-
-        while not self.future.done() and rclpy.ok():
-            rclpy.spin_once(self, timeout_sec=0.1)
-        if self.future.result() is not None:
-            response = self.future.result()
-            self.get_logger().info('応答: ' + response.answer)
-        else:
-           self.get_logger().info('サービスが応答しませんでした。')
-        return response.answer_name
+#class Speech(Node):
+#    def __init__(self):
+#        super().__init__('test_speech') 
+#        self.node = rclpy.create_node('fmm_client')
+#        self.client = self.node.create_client(StringCommand, 'fmm_speech_service/wake_up')
+#        self.req = None
+#        self.future = None
+#        
+#    def execute(self):
+#        time.sleep(1.0)
+#        self.req = StringCommand.Request()
+#        self.future = self.client.call_async(self.req)
+#        rclpy.spin_until_future_complete(self.node, self.future)
+#
+#        while not self.future.done() and rclpy.ok():
+#            rclpy.spin_once(self, timeout_sec=0.1)
+#        if self.future.result() is not None:
+#            response = self.future.result()
+#            self.get_logger().info('応答: ' + response.answer)
+#        else:
+#           self.get_logger().info('サービスが応答しませんでした。')
+#        return response.answer_name
 
 class AttributeRecog(Node):
     def __init__(self):
@@ -156,41 +214,48 @@ class PersonDetector(Node):
     
 def main():
     rclpy.init()
-    synthesis2("Start, find my mates.")
-    nb = Navigation()
-    hi = HitoSekkin()
-    sp = Speech()
-    at = AttributeRecog()
-    per = PersonDetector()
-    
+    #synthesis2("Start, find my mates.")
+    #nb = Navigation()
+    #hi = HitoSekkin()
+    #sp = Speech()
+    #at = AttributeRecog()
+    #per = PersonDetector()
+    tc = TestClient()
+    tc.tts_send_request("start, find my mates.")
+
     try:
         #1人目
-        nb.execute('fmm_find')
+        #nb.execute('fmm_find')
         time.sleep(1.0)
-        hi.execute()
-        name = sp.execute()
-        img = per.execute()
-        nb.execute('fmm_Operator')
+        #hi.execute()
+        name = tc.stt_send_request()
+        #name = sp.execute()
+        name_d = tc.nd_send_request(name)
+        #img = per.execute()
+        #nb.execute('fmm_Operator')
         time.sleep(1.0)
-        synthesis2("Name is " + name)
-        attribute_sentence = at.execute(img)
-        synthesis2(attribute_sentence)
+        tc.tts_send_request("Name is " + name_d)
+        #synthesis2("Name is " + name)
+        #attribute_sentence = at.execute(img)
+        #tc.tts_send_request(attribute_sentence)
+        #synthesis2(attribute_sentence)
         
         ##2人目
-        nb.execute('fmm_find2')
-        time.sleep(1.0)
-        hi.execute()
-        name = sp.execute()
-        img = per.execute()
-        nb.execute('fmm_Operator')
-        time.sleep(1.0)
-        synthesis2("Name is " + name)
-        attribute_sentence = at.execute(img)
-        synthesis2(attribute_sentence)
+        #nb.execute('fmm_find2')
+        #time.sleep(1.0)
+        #hi.execute()
+        ##name = sp.execute()
+        #img = per.execute()
+        #nb.execute('fmm_Operator')
+        #time.sleep(1.0)
+        ##synthesis2("Name is " + name)
+        #attribute_sentence = at.execute(img)
+        ##synthesis2(attribute_sentence)
 
         # 3人目今後やる
 
-        synthesis2("Finish, find my mates.")
+        tc.tts_send_request("Fisish, find my mates.")
+        #synthesis2("Finish, find my mates.")
     except KeyboardInterrupt:
         pass
     finally:
