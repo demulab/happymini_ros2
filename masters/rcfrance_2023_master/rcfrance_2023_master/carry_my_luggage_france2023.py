@@ -200,23 +200,32 @@ class Return(smach.State):
         self.logger = node.get_logger()
         # Service
         self.navi = node.create_client(NaviLocation, 'navi_location_server')
-        while not self.navi_location.wait_for_service(timeout_sec=1.0) and rclpy.ok():
+        while not self.navi.wait_for_service(timeout_sec=1.0) and rclpy.ok():
             self.logger.info("/navi_location_server is not here ...")
         self.req = NaviLocation.Request()
 
-    def execute(self, userdata):
-        self.req.location_name = 'ChairA'
+    def do_navigation(self):
+        self.req.location_name = 'cml_start'
         # Call
         future = self.navi.call_async(self.req)
         # Waiting
         while not future.done() and rclpy.ok():
-            rclpy.spin_once(self, timeout_sec=0.1)
+            rclpy.spin_once(self.node, timeout_sec=0.1)
         # Result
         if future.result() is not None:
             navi_result = future.result().result
-            return result
+            print(navi_result)
         else:
             self.logger.info(f"Service call failed")
+
+    def execute(self, userdata):
+        navi_result = False
+        counter = 1
+        while not navi_result and rclpy.ok():
+            if counter > 3:
+                break
+            navi_result = self.do_navigation()
+            counter += 1
         return 'success'
 
 
@@ -284,6 +293,7 @@ class CarryMyLuggage(Node):
                     'RETURN', Return(self),
                     transitions={'success':'end'})
         # Execute
+        self.tts('Start Carry My Luggage')
         outcome = sm.execute()
         self.get_logger().info(f"outcome: {outcome}")
 

@@ -26,9 +26,6 @@ class WayPointNavi(Node):
         super().__init__('waypoint_navi')
         # Action
         self.nav_to_pose_client = ActionClient(self, NavigateToPose, 'navigate_to_pose')
-        # Service
-        self.navi_location_srv = self.create_service(NaviLocation, 'navi_location_server', self.navigation_execute)
-        self.get_logger().info("Ready to set /navi_location_srever")
         # YAML
         self.yaml_path = sys.argv[1]
         self.get_logger().info(f"Load the following YAML file: {self.yaml_path}")
@@ -115,7 +112,7 @@ class WayPointNavi(Node):
             future = self.goal_handle.cancel_goal_async()
             rclpy.spin_until_future_complete(self, future)
 
-    def navigation_execute(self, srv_req, srv_res):
+    def do_navigation(self, srv_req, srv_res):
         self.navigation_flg = False
         send_goal_flg = True
         location_coordinate = self.search_location_param(srv_req.location_name)
@@ -128,11 +125,22 @@ class WayPointNavi(Node):
         self.get_logger().info(f"srv_res >>> {srv_res.result}")
         return srv_res
 
+
+class NaviLocationServer(Node):
+    def __init__(self):
+        super().__init__('navi_location_server')
+        # Node
+        self.wp_node = WayPointNavi()
+        # Service
+        self.navi_location_srv = self.create_service(NaviLocation, 'navi_location_server', self.wp_node.do_navigation)
+        self.get_logger().info("Ready to set /navi_location_srever")
+
+
 def main(args=None):
     rclpy.init(args=args)
-    waypoint_navi = WayPointNavi()
+    navi_location_server = NaviLocationServer()
     try:
-        rclpy.spin(waypoint_navi)
+        rclpy.spin(navi_location_server)
     except KeyboardInterrupt:
         pass
     waypoint_navi.destroy_node()

@@ -20,7 +20,7 @@ def generate_launch_description():
             default=os.path.join(
                 get_package_share_directory('happymini_navigation'),
                 'maps',
-                'gazebo_map.yaml'))
+                'demulab_230604.yaml'))
 
     # location yaml path
     location_dir = LaunchConfiguration(
@@ -28,7 +28,7 @@ def generate_launch_description():
             default=os.path.join(
                 get_package_share_directory('happymini_navigation'), 
                 'location',
-                'gazebo_map.yaml'))
+                'demulab_230604.yaml'))
 
     return LaunchDescription([
         DeclareLaunchArgument(
