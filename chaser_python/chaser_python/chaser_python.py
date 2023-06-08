@@ -1072,6 +1072,9 @@ def main():
 
     time_counter = time.time()
 
+    # Trueでcmd_velのパブリッシュをとめる
+    stop_flg = False
+
     while rclpy.ok():
         rclpy.spin_once(robot, timeout_sec=0.1)
         robot.laser_cycle()
@@ -1083,10 +1086,15 @@ def main():
             continue
  
         if robot.follow_command == "start":
+            stop_flg = False
             robot.followHuman(lidar_erode_image,True)
             robot.showWindow()
+        elif robot.follow_command == "stop" and stop_flg:
+            pass
         elif robot.follow_command == "stop":
+            stop_flg = True
             robot.followHuman(lidar_erode_image,False)
+        
 
         time.sleep(loop_rate)
         cut+=1
