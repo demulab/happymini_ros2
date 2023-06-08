@@ -9,8 +9,7 @@ from geometry_msgs.msg import Twist
 from happymini_manipulation.motor_controller import JointController
 # Custom msg
 from happymini_msgs.action import GraspBag
-from happymini_msgs.srv import NaviLocation
-from happymini_msgs.srv import TextToSpeech, SpeechToText
+from happymini_msgs.srv import NaviLocation, SpeechToText, WavPlay
 
 
 class DetectPose(smach.State):
@@ -51,10 +50,14 @@ class DetectPose(smach.State):
                 tmp_time = time_count
 
     def execute(self, userdata):
+        self.node.tts('/cml2023/start_cml')
+        time.sleep(0.5)
+        self.node.tts('/cml2023/which_bag')
         self.get_pose()
         userdata.left_right_out = self.hand_pose
         if self.timeout_flg:
             return 'time_out'
+        self.node.tts('/cml2023/ok')
         return 'detected'
 
 
@@ -97,6 +100,10 @@ class GraspBagState(smach.State):
         self.logger.info(feedback_msg.feedback.state)
 
     def execute(self, userdata):
+        if userdata.left_right_in == 'left':
+            self.node.tts('/cml2023/right_bag')
+        else:
+            self.node.tts('/cml2023/left_bag')
         self.logger.info(f"(left_right, <{userdata.left_right_in}>)")
         self.send_goal(userdata.left_right_in)
         while not self.result:
@@ -142,6 +149,7 @@ class Chaser(smach.State):
         self.chaser_check_flg = receive_msg.data
 
     def execute(self, userdata):
+        self.node.tts('/cml2023/follow_you')
         self.chaser_msg.data = 'start'
         start_time = 0.0
         time_counter = 0.0
@@ -149,7 +157,7 @@ class Chaser(smach.State):
             rclpy.spin_once(self.node, timeout_sec=0.1)
             if self.sub_linear_x == 0.0 and self.chaser_check_flg and time_counter > 5.0:
                 self.logger.info("Is this the location of a car?")
-                _ = self.node.tts('Is this the location of a car?')
+                self.node.tts('/cml2023/car_question')
                 self.logger.info("Doing /stt")
                 response = self.node.stt(cmd='yes_no')
                 if response == 'yes':
@@ -183,10 +191,9 @@ class GiveBag(smach.State):
 
     def execute(self, userdata):
         self.arm.give()
-        self.node.tts('Here you are.')
+        self.node.tts('/cml2023/give_bag')
         time.sleep(5.0)
         self.arm.start_up()
-        self.node.tts('No problem.')
         return 'finished'
 
 
@@ -219,6 +226,7 @@ class Return(smach.State):
             self.logger.info(f"Service call failed")
 
     def execute(self, userdata):
+        self.node.tts('/cml2023/return')
         navi_result = False
         counter = 1
         while not navi_result and rclpy.ok():
@@ -226,6 +234,7 @@ class Return(smach.State):
                 break
             navi_result = self.do_navigation()
             counter += 1
+        self.node.tts('/cml2023/finish_cml')
         return 'success'
 
 
@@ -233,16 +242,17 @@ class CarryMyLuggage(Node):
     def __init__(self):
         super().__init__('carry_my_luggage')
         # Service
-        self.tts_srv = self.create_client(TextToSpeech, 'tts')
+        self.tts_srv = self.create_client(WavPlay, 'wav_play_server')
         self.stt_srv = self.create_client(SpeechToText, 'stt')
-        while not self.tts_srv.wait_for_service(timeout_sec=1.0) and not self.stt_srv.wait_for_service(timeout_sec=1.0):
+        while not self.tts_srv.wait_for_service() and not self.stt_srv.wait_for_service():
             self.get_logger().info("/tts and /stt is not here ...")
-        self.tts_msg = TextToSpeech.Request()
+            rclpy.spin_once(self, timeout_sec=0.5)
+        self.tts_msg = WavPlay.Request()
         self.stt_msg = SpeechToText.Request()
 
-    def tts(self, text):
+    def tts(self, file_name):
         # msg
-        self.tts_msg.text = text
+        self.tts_msg.file = file_name
         # Request
         tts_srv_future = self.tts_srv.call_async(self.tts_msg)
         while not tts_srv_future.done() and rclpy.ok():
@@ -293,7 +303,6 @@ class CarryMyLuggage(Node):
                     'RETURN', Return(self),
                     transitions={'success':'end'})
         # Execute
-        self.tts('Start Carry My Luggage')
         outcome = sm.execute()
         self.get_logger().info(f"outcome: {outcome}")
 
