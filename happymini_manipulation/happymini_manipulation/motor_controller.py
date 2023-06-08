@@ -46,7 +46,7 @@ class JointController(Node):
                 gripper = math.radians(55)
             else:
                 gripper = math.radians(-90)
-            angle_list = list(map(math.degrees, [0.0, shoulder_angle, elbow_angle, wrist_angle, gripper]))
+            angle_list = list(map(math.degrees, [math.radians(90), shoulder_angle, elbow_angle, wrist_angle, gripper]))
             return angle_list
         except ValueError:
             self.get_logger().info('Can not move arm.')
@@ -83,7 +83,7 @@ class JointController(Node):
         self.publish_joint(self.joint_angle_list, 2)
 
     def give(self):
-        self.joint_angle_list = [0.0, 45, -45, -90, -90]
+        self.joint_angle_list = [90, 45, -45, -90, -90]
         self.publish_joint(self.joint_angle_list)
 
     def start_up(self):
