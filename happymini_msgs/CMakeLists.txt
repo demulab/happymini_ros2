@@ -15,6 +15,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     "srv/NaviLocation.srv"
     "srv/TextToSpeech.srv"
     "srv/SpeechToText.srv"
+    "srv/WavPlay.srv"
+    "srv/WavMake.srv"
     "action/GraspBag.action"
     )
 
