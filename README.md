@@ -47,10 +47,14 @@ realsenseの起動
 ```bash
 ros2 launch realsense2_camera rs_launch.py align_depth.enable:=true
 ```
+魚眼カメラの起動
+```bash
+ros2 run v4l2_camera v4l2_camera_node --ros-args --param video_device:=/dev/video2
+```
 
 属性認識
 ```bash
-ros2 run attribute_recognition attribute_recognition_node
+ros2 run attribute_recognition attribute_recog_node
 ```
 
 人認識、距離推定
@@ -60,7 +64,7 @@ ros2 run yolov5_ros2 object_detection_tf
 
 人認識②
 ```bash
-ros2 run yolov5_ros2 person_detecto
+ros2 run yolov5_ros2 person_detector
 ```
 ※将来的に人認識はこれに変更する予定
 

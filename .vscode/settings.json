@@ -62,5 +62,9 @@
         "/home/qibitech/dev_ws/install/approach_person/lib/python3.8/site-packages",
         "/home/qibitech/dev_ws/install/airobot_interfaces/lib/python3.8/site-packages",
         "/opt/ros/foxy/lib/python3.8/site-packages"
-    ]
+    ],
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.autopep8"
+    },
+    "python.formatting.provider": "none"
 }

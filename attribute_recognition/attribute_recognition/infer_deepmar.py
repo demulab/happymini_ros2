@@ -3,7 +3,7 @@ from .deepmar import DeepMAR
 import numpy as np
 import cv2
 from PIL import Image as PILImage
-
+from deepface import DeepFace
 from .attributeinfo import AttributeInfo
         
 
@@ -18,6 +18,14 @@ class AttributeRecognizer:
         self.__model = DeepMAR(35)
         self.__model.load_weights(weights_path)
         self.__attrInfo = AttributeInfo()
+        self.__facedetect_backends = [
+            'opencv', 
+            'ssd', 
+            'dlib', 
+            'mtcnn', 
+            'retinaface', 
+            'mediapipe'
+        ]
 
 
     def preprocessROSImage(self, image :np.ndarray):
@@ -84,20 +92,52 @@ class AttributeRecognizer:
         Returns:
         - str: The description of recognized attributes.
         """
-        image = self.preprocessROSImage(image)
-        predictions = self.__model.predict(image)
+        image_input = self.preprocessROSImage(image)
+        predictions = self.__model.predict(image_input)
         attrs = np.nonzero(predictions >= 0)[1]
-        print(predictions)
-        print(attrs)
-        self.__attrInfo.storeAttributes(attrs)
 
-        result = "{0}.\n{1}.\n{2}.\n.\n".format(self.__attrInfo.describeGender(), self.__attrInfo.describeFasionStyle(), self.__attrInfo.describeClothDetails())
+        demographies = self.recognizeFace(image)
+        #for i in range(len(self.__attrInfo.label)):
+        #    print("{0}: {1}".format(self.__attrInfo.label[i], predictions[0][i]))
+        #print(attrs)
+        self.__attrInfo.storeAttributes(attrs, demographies)
+
+
+
+        result = "{0}.\n{1}.\n{2}.\n{3}.\n".format(self.__attrInfo.describeGender(), self.__attrInfo.describeAge(), self.__attrInfo.describeFasionStyle(), self.__attrInfo.describeClothDetails())
+
+
+        
+        #result = "{0}.\n{1}.\n{2}.\n.\n".format(self.__attrInfo.describeGender(), self.__attrInfo.describeFasionStyle(), self.__attrInfo.describeClothDetails())
         return result
+    
+    def recognizeFace(self, image : np.ndarray) -> dict:
+        """
+        Recognize demographic feature based on face. This method was made because the attribute detection for the gender and age were bad when using DeepMAR.
+        Returns:
+        - dict : Demographic information
+        """
+        try:
+            #facial analysis
+            demographies = DeepFace.analyze(image, 
+            detector_backend = self.__facedetect_backends[3]
+            )
+            result = demographies[0]
+            result["face_found"] = True
+            return result
+
+        except ValueError:
+            result = dict()
+            result["face_found"] = False
+            return result
+
+
+
 
 
 if __name__ == "__main__":
     attributeRecognizer = AttributeRecognizer()
-    result =  attributeRecognizer.recognizeAttributesWithPath("lepar/datasets/raw/images/00001.png")
+    result =  attributeRecognizer.recognizeAttributesWithPath("categories/50cm.png")
     print(result)
     
 
