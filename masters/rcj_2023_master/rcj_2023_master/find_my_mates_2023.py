@@ -14,29 +14,29 @@ from rclpy.executors import MultiThreadedExecutor
 from cv_bridge import CvBridge
 import cv2
 
-#def synthesis2(text = None):
-#    # 音声合成を行うことをloggerで表示します．
-#    print(f'音声合成を実行します')
-#    print(f'発話内容は "{text}"')
-#
-#    # 音声合成エンジンを初期化します．
-#    engine = pyttsx3.init()
-#
-#    # 言語を設定します．
-#    lang = "en-US"
-#    engine.setProperty('voice', lang)
-#    # rateは、1分あたりの単語数で表した発話速度。基本は、200です。
-#    rate = engine.getProperty("rate")
-#    engine.setProperty("rate",160)
-#
-#    # ボリュームは、0.0~1.0の間で設定します。
-#    volume = engine.getProperty('volume')
-#    engine.setProperty('volume',1.0)
-#
-#    # テキストを音声に合成します．
-#    engine.say(text)
-#
-#    engine.runAndWait()
+def synthesis2(text = None):
+    # 音声合成を行うことをloggerで表示します．
+    print(f'音声合成を実行します')
+    print(f'発話内容は "{text}"')
+
+    # 音声合成エンジンを初期化します．
+    engine = pyttsx3.init()
+
+    # 言語を設定します．
+    lang = "en-US"
+    engine.setProperty('voice', lang)
+    # rateは、1分あたりの単語数で表した発話速度。基本は、200です。
+    rate = engine.getProperty("rate")
+    engine.setProperty("rate",160)
+
+    # ボリュームは、0.0~1.0の間で設定します。
+    volume = engine.getProperty('volume')
+    engine.setProperty('volume',1.0)
+
+    # テキストを音声に合成します．
+    engine.say(text)
+
+    engine.runAndWait()
 
 #新しい音声：Yes,Noではなく名前を聞く
 class TestClient(Node):
@@ -81,20 +81,20 @@ class TestClient(Node):
             self.get_logger().info(f"Service call failed")
             return None
 
-    def tts_send_request(self, text=None):
-        tts_srv_result = 'None'
-        self.tts_srv_req.text = text
+    #def tts_send_request(self, text=None):
+    #    tts_srv_result = 'None'
+    #    self.tts_srv_req.text = text
 
-        tts_srv_future = self.tts_srv.call_async(self.tts_srv_req)
-        while not tts_srv_future.done() and rclpy.ok():
-            rclpy.spin_once(self, timeout_sec=0.1)
-        if tts_srv_future.result() is not None:
-            tts_srv_result = tts_srv_future.result().result
-            print(tts_srv_result)
-            return tts_srv_result
-        else:
-            self.get_logger().info(f"Service call failed")
-            return None
+    #    tts_srv_future = self.tts_srv.call_async(self.tts_srv_req)
+    #    while not tts_srv_future.done() and rclpy.ok():
+    #        rclpy.spin_once(self, timeout_sec=0.1)
+    #    if tts_srv_future.result() is not None:
+    #        tts_srv_result = tts_srv_future.result().result
+    #        print(tts_srv_result)
+    #        return tts_srv_result
+    #    else:
+    #        self.get_logger().info(f"Service call failed")
+    #        return None
 
         
 class Navigation(Node):
@@ -214,43 +214,52 @@ class PersonDetector(Node):
     
 def main():
     rclpy.init()
-    #synthesis2("Start, find my mates.")
-    #nb = Navigation()
-    #hi = HitoSekkin()
+    synthesis2("Start, find my mates.")
+    nb = Navigation()
+    hi = HitoSekkin()
     #sp = Speech()
-    #at = AttributeRecog()
-    #per = PersonDetector()
+    at = AttributeRecog()
+    per = PersonDetector()
     tc = TestClient()
-    tc.tts_send_request("start, find my mates.")
+    #tc.tts_send_request("start, find my mates.")
 
     try:
         #1人目
-        #nb.execute('fmm_find')
+        nb.execute('fmm_find')
         time.sleep(1.0)
-        #hi.execute()
+        hi.execute()
+        synthesis2("What's your name?")
         name = tc.stt_send_request()
         #name = sp.execute()
         name_d = tc.nd_send_request(name)
-        #img = per.execute()
-        #nb.execute('fmm_Operator')
+        img = per.execute()
+        nb.execute('fmm_Operator')
         time.sleep(1.0)
-        tc.tts_send_request("Name is " + name_d)
+        #tc.tts_send_request("Name is " + name_d)
+        synthesis2("Name is " + name_d)
         #synthesis2("Name is " + name)
-        #attribute_sentence = at.execute(img)
+        attribute_sentence = at.execute(img)
         #tc.tts_send_request(attribute_sentence)
-        #synthesis2(attribute_sentence)
-        
-        ##2人目
-        #nb.execute('fmm_find2')
-        #time.sleep(1.0)
-        #hi.execute()
-        ##name = sp.execute()
-        #img = per.execute()
-        #nb.execute('fmm_Operator')
-        #time.sleep(1.0)
-        ##synthesis2("Name is " + name)
-        #attribute_sentence = at.execute(img)
-        ##synthesis2(attribute_sentence)
+        synthesis2(attribute_sentence)
+ 
+        #2人目
+        nb.execute('fmm_find2')
+        time.sleep(1.0)
+        hi.execute()
+        synthesis2("What's your name?")
+        name = tc.stt_send_request()
+        #name = sp.execute()
+        name_d = tc.nd_send_request(name)
+        img = per.execute()
+        nb.execute('fmm_Operator')
+        time.sleep(1.0)
+        #tc.tts_send_request("Name is " + name_d)
+        synthesis2("Name is " + name_d)
+        #synthesis2("Name is " + name)
+        attribute_sentence = at.execute(img)
+        #tc.tts_send_request(attribute_sentence)
+        synthesis2(attribute_sentence)
+
 
         # 3人目今後やる
 
