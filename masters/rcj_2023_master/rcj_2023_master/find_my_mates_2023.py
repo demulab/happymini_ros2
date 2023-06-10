@@ -228,6 +228,7 @@ def main():
         nb.execute('fmm_find')
         time.sleep(1.0)
         hi.execute()
+        synthesis2("What's your name?")
         name = tc.stt_send_request()
         #name = sp.execute()
         name_d = tc.nd_send_request(name)
@@ -240,19 +241,25 @@ def main():
         attribute_sentence = at.execute(img)
         #tc.tts_send_request(attribute_sentence)
         synthesis2(attribute_sentence)
-        
+ 
         #2人目
         nb.execute('fmm_find2')
         time.sleep(1.0)
         hi.execute()
+        synthesis2("What's your name?")
+        name = tc.stt_send_request()
         #name = sp.execute()
+        name_d = tc.nd_send_request(name)
         img = per.execute()
         nb.execute('fmm_Operator')
         time.sleep(1.0)
-        #synthesis2("Name is " + name)
+        #tc.tts_send_request("Name is " + name_d)
         synthesis2("Name is " + name_d)
+        #synthesis2("Name is " + name)
         attribute_sentence = at.execute(img)
+        #tc.tts_send_request(attribute_sentence)
         synthesis2(attribute_sentence)
+
 
         # 3人目今後やる
 
