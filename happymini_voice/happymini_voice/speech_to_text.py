@@ -47,7 +47,7 @@ class SpeechToTextServer(Node):
             #recognizer.energy_threshold = recognizer.energy_threshold * 1.8 * (0.5/distance)
             #print(recognizer.energy_threshold)
             try:
-                audio = recognizer.listen(source, timeout=20)
+                audio = recognizer.listen(source, timeout=5, phrase_time_limit=3)
             except sr.exceptions.WaitTimeoutError:
                 pass
     
