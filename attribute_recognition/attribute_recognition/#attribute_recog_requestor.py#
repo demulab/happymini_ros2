@@ -1,0 +1,11 @@
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import Image
+from happymini_msgs.srv import StringCommand, SpeechToText, NameDetect, TextToSpeech, AttributeRecognition, DetectPerson
+from happymini_msgs.msg import DetectionResult
+import cv2
+
+
+class AttributeRecogReq(Node):
+    def __init__(self):
+        super().__init__("attrib_req")

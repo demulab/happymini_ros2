@@ -53,6 +53,15 @@ class Carry(Enum):
     NOTHING = 3,
     OTHERS = 4
 
+
+class Race(Enum):
+    ASIAN = 0,
+    INDIAN = 1,
+    BLACK = 2,
+    WHITE = 3,
+    MIDDLEEAST =4, 
+    HISPANIC=5
+
 class AttributeInfo:
     def __init__(self):
 
@@ -64,6 +73,10 @@ class AttributeInfo:
 
         ## age attributess
         self.age = Age.UNKNOWN
+
+        ## demographic attributes
+        self.race = Race.ASIAN
+
 
         ## fasion attributes
         self.tops_fasion = FasionStyle.UNKNOWN
@@ -97,6 +110,33 @@ class AttributeInfo:
         self.tops_pattern_label = {"logo" : 14, "plaid" : 21, "thin_stripes" : 29}
         self.lowerbody_cloth_label = {"jeans" : 12, "shorts" : 25, "shortskirt" : 27, "trousers" : 31}
         self.footwear_label = {"leather_shoes" : 13, "sandals" : 23, "shoes" : 24, "sneaker" : 28}
+        self.label = ["U30", "U45", "U60", "O60", "backpack", "others", "lower_casual", "upper_casual", "lower_formal", "upper_formal", "hat", "jacket", "jeans", "leather_shoes", 
+                      "logo", "long", "male", "messenger_bag", "muffler", "nothing", "plaid", "plastic_bag", "sandals", "shoes", "shorts", "sleeve", "shortskirt", "sneaker", "thin_stripes", "sunglasses",
+                      "trousers", "tshirt", "others", "vneck"]
+
+    def convertAge2Enum(self, age : int) -> Age:
+        if age < 30:
+            return Age.U30
+        elif age >= 30 and age < 45:
+            return Age.U45
+        elif age >= 45 and age < 60:
+            return Age.U60
+        else:
+            return Age.O60
+        
+    def storeRace(self, race : str) -> Race:
+        if race.find("asian") != -1:
+            return Race.ASIAN
+        elif race.find("indian") != -1:
+            return Race.INDIAN
+        elif race.find("white") != -1:
+            return Race.WHITE
+        elif race.find("black") != -1:
+            return Race.BLACK
+        elif race.find("middle") != -1:
+            return Race.MIDDLEEAST
+        else:
+            return Race.HISPANIC
 
     def storeAge(self, data : np.ndarray) -> None:
         if self.ageattr_label["U30"] in data:
@@ -199,13 +239,23 @@ class AttributeInfo:
         else:
             self.accessories = Accessories.UNKNOWN
 
-    def storeAttributes(self, data : np.ndarray) -> None:
+    def storeAttributes(self, data : np.ndarray, demographics : dict) -> None:
         
-        self.male = self.genderattr_label["male"] in data
+        if demographics["face_found"]:
+            print("face foumd, running high acc gender and age detection")
+            self.age = self.convertAge2Enum(demographics["age"])
+            self.male = demographics["dominant_gender"] == "Man"
+            self.race = self.storeRace(demographics["dominant_race"])
+
+        else:
+            print("face not found, running low acc gender and age detection")
+            self.male = self.genderattr_label["male"] in data
+            self.storeAge(data)
+
+
         self.hair_long = self.hairstyle_label["long"] in data
         self.short_sleeve = self.short_sleeve_label["sleeve"] in data
 
-        self.storeAge(data)
         self.storeFasionStyle(data)
         self.storeTopsPattern(data)
         self.storeTopsType(data)
@@ -220,6 +270,16 @@ class AttributeInfo:
         age_description = ""
 
         if self.age == Age.U30:
+            age_description = "young"
+
+        elif self.age == Age.U45 :
+            age_description = "mid aged"
+
+        elif self.age == Age.U60 or self.age == Age.O60:
+            age_description = "old"
+
+        """
+        if self.age == Age.U30:
             age_description = "under 30 years old"
         elif self.age == Age.U45:
             age_description = "over 30 years old, and under 45 years old"
@@ -227,7 +287,7 @@ class AttributeInfo:
             age_description = "over 45 years old, and under 60 years old"
         else:
             age_description = "over 60 years old"
-        
+        """
         age_sentence = "{0} is {1}".format(pronoun, age_description)
         return age_sentence
     
@@ -248,7 +308,7 @@ class AttributeInfo:
         fasionstyle_sentence = "{0} fashion style is, tops {1}, and bottoms {2}".format(pronoun, tops_fasion, bottoms_fasion)
         return fasionstyle_sentence
     
-    def describeClothDetails(self) -> str:
+    def describeClothDetails(self, describe_shoes=False, describe_hat=False, describe_bag=False) -> str:
         pronoun = "He" if self.male else "She"
         tops_description = ""
 
@@ -317,5 +377,9 @@ class AttributeInfo:
 
         carry_description += ", " if len(shoes_description) > 0 else ""
 
-        cloth_sentence = "{0} is wearing a {1} {2}, {3}{4}{5}{6}.".format(pronoun, tops_pattern, tops_cloth, bottoms_cloth, accessories_description, carry_description, shoes_description)
-        return cloth_sentence
+        
+        cloth_sentence = "{0} is wearing a {1} {2}, {3}".format(pronoun, tops_pattern, tops_cloth, bottoms_cloth)
+        acc_sentence = "{0}{1}{2}".format(accessories_description if describe_hat else "", shoes_description if describe_shoes else "", carry_description if describe_bag else "")
+
+        
+        return cloth_sentence + acc_sentence

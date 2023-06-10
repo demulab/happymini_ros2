@@ -21,7 +21,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            "attribute_recog_node = attribute_recognition.attribute_recog_node:main "
+            "attribute_recog_node = attribute_recognition.attribute_recog_node:main ",
+            "attribute_recog_requestor = attribute_recognition.attribute_recog_requestor:main "
         ],
     },
 )
