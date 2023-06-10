@@ -1,0 +1,4 @@
+sensor_msgs/Image[] images
+geometry_msgs/Vector3[] poses
+string[] tags
+float32[] likelihood
