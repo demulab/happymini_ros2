@@ -39,10 +39,15 @@ navigation
 ros2 launch happymini_navigation navigation2.launch.py
 ```
 
-fmm_speech_service
+speech_to_text
 ```bash
-ros2 run happymini_voice fmm_speech_service
+ros2 run happymini_voice speech_to_text
 ```
+name_detect
+```bash
+ros2 run happymini_voice name_detect
+```
+
 realsenseの起動
 ```bash
 ros2 launch realsense2_camera rs_launch.py align_depth.enable:=true
