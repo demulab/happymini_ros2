@@ -54,7 +54,7 @@ class PersonDetector(Node):
                 ppl_img = new_img[v1:v2+1, u1:u2+1]
                 likelihood = r.conf
         
-        h, w = ppl_img.shape
+        h, w, _ = ppl_img.shape
         if h*w > 0:
             img_msg = self.bridge.cv2_to_imgmsg(ppl_img, "bgr8")
         else:
