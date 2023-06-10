@@ -106,6 +106,7 @@ def main():
     rclpy.init()
     gbs = GraspBagServer()
     try:
+        gbs.jc_node.start_up()
         rclpy.spin(gbs)
     except KeyboardInterrupt:
         pass
