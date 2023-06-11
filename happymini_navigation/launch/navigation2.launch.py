@@ -30,9 +30,9 @@ def generate_launch_description():
                 turtlebot3_navigation2_launch + '/navigation2.launch.py'])
         ),
 
-        Node(
-            package='happymini_navigation',
-            executable='navi_location',
-            arguments=[yaml_path],
-            output='screen'),
-        ])
+        #Node(
+        #    package='happymini_navigation',
+        #    executable='navi_location',
+        #    arguments=[yaml_path],
+        #    output='screen'),
+        #])

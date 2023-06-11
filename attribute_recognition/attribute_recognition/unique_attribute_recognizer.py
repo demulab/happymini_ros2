@@ -19,11 +19,12 @@ class UniqueAttributeRecognizer:
         ]
 
         self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
-        self.processor = AutoProcessor.from_pretrained("microsoft/git-base-coco")
-        self.model = AutoModelForCausalLM.from_pretrained("microsoft/git-base-coco")        
+        #self.processor = AutoProcessor.from_pretrained("microsoft/git-base-coco")
+        #self.model = AutoModelForCausalLM.from_pretrained("microsoft/git-base-coco")
+        self.model = AutoModelForCausalLM.from_pretrained("microsoft/git-large-r-textcaps")         
+
         self.model.to(self.device)
-        #self.processor = AutoProcessor.from_pretrained("microsoft/git-large-r-textcaps")
-        #self.model = AutoModelForCausalLM.from_pretrained("microsoft/git-large-r-textcaps")         
+        self.processor = AutoProcessor.from_pretrained("microsoft/git-large-r-textcaps")
 
 
     def recognizeAttributes(self, image : np.ndarray, env_img : np.ndarray) -> str:
