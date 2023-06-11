@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import rclpy
@@ -22,8 +22,8 @@ import copy
 def DEG2RAD(DEG): return math.pi*DEG/180.0
 def RAD2DEG(RAD): return 180.0*RAD/math.pi
 
-g_find_leg_radius = 45.0                #検出範囲の中心座標から半径[px]
-kExtendRadius = 60.0                    #見失ったときの検出範囲[px]
+g_find_leg_radius = 20.0                #検出範囲の中心座標から半径[px]
+kExtendRadius = 30.0                    #見失ったときの検出範囲[px]
 kOrignalRadius = g_find_leg_radius      
 kMagnificationWorldImagePos = 10.0      #画像上で物体同士が重ならないようにするための世界座標の倍率
 kUpdateLastImageCount  = 30.0           #比較する世界座標系の画像を更新するループ回数　one loop 30[ms]
@@ -31,12 +31,12 @@ kUpdateLastImageCount  = 30.0           #比較する世界座標系の画像を
 kFollowMaxDistance = 2.0                #追従距離の最大
 kFollowDistance    = 0.4                #人からこの距離で追従する
 kFollowMinDistance = 0.3                #追従距離の最小
-kFollowAngle       = 120.0              #探す範囲は正面のこの角度[deg]
-kGainLinear        = 0.4                #P制御比例ゲイン
-kKp                = 0.10               #PD制御ゲイン(回転)
-kKd                = 0.3                #
-kLinearMaxSpeed    = 0.5                #並進の最大速度
-kTurnMaxSpeed      = 0.3                #角速度　最大3.14[rad/s]
+kFollowAngle       = 180.0              #探す範囲は正面のこの角度[deg]
+kGainLinear        = 0.7                #P制御比例ゲイン
+kKp                = 0.8                #PD制御ゲイン(回転)
+kKd                = 0.5                #
+kLinearMaxSpeed    = 0.3                #並進の最大速度
+kTurnMaxSpeed      = 0.7                #角速度　最大3.14[rad/s]
 
 kDefaultDetectPosX	= 250.0             #検出範囲のxの初期の中心座標[px]
 kDefaultDetectPosY = 200.0              #検出範囲のyの初期の中心座標[px]
@@ -344,6 +344,8 @@ class Robot(Node):
         cmd = Twist()
         cmd.linear.x = float(linear)
         cmd.angular.z = float(angular)
+        print(cmd)
+        time.sleep(0.01)
         self.cmd_vel_pub.publish(cmd)
 
     '''
@@ -498,8 +500,10 @@ class Robot(Node):
                 continue
 
             #輪郭の長さにより除外
+            #print(len(contours[cn]))  # contour_min, contour_maxをこれみて調整
             if not ((len(contours[cn]) >= contour_min) and (len(contours[cn]) <= contour_max)):
                 continue
+            #print(len(contours[cn]))  # contour_min, contour_maxをこれみて調整
 
             #kFollowMaxDistance * kMToPixelより遠い物体は検出しない
             if kFollowMaxDistance * float(kMToPixel) < kImageHeight/2.0 - center.y:
@@ -509,22 +513,28 @@ class Robot(Node):
             rect_x,rect_y,rect_w,rect_h = cv2.boundingRect(contours[cn])
 
             #長方形の底面による除外
+            #print(f"rect_w: {rect_w}")  # width_min, width_maxはこれみて調整
             if not ((rect_w >= width_min) and (rect_w <= width_max)):
                 continue
 
             #縦横比による除外
             if not rect_w == 0:
                 ratio = float(rect_h)/float(rect_w)
+                #print(f"ratio: {ratio}")  # ratio_min, ratio_maxはこれみて調整
                 if not ((ratio >= ratio_min) and (ratio <= ratio_max)):
                     continue
 
             #面積による除外
             mom = cv2.moments(contours[cn])
             
+            #print(f"m00: {mom['m00']}")  # m00_min, m00_maxはこれみて調整
+            #print(f"m10: {mom['m10']}")  # m10_min, m10_maxはこれみて調整
             if not ((mom['m00'] > m00_min) and (mom['m00'] < m00_max)):
                 continue
             if not ((mom['m10'] > m10_min) and (mom['m10'] < m10_max)):
                 continue
+            #print(f"m00: {mom['m00']}")  # m00_min, m00_maxはこれみて調整
+            #print(f"m10: {mom['m10']}")  # m10_min, m10_maxはこれみて調整
 
             #重心による判定
             #脚(円柱)の断面はu字なので重心のy座標が苑より下になる
@@ -537,6 +547,7 @@ class Robot(Node):
 
             if center.y - point_y > diff_y:
                 continue
+            #print(f"diff_y: {center.y - point_y}")
 
             #反射強度による除外
             for i in range(rect_y,rect_y + rect_h):
@@ -887,7 +898,7 @@ class Robot(Node):
         #脚候補を見つけるために元画像で連続領域を探索
         #脚候補Wクォ見つけてその数を返す
         #長ズボンの際は0次モーメント(輪郭面積)を40,半ズボンなら34
-        obj_num = self.findLegs(input_image,obj, lidar_image, red,10,28, 10, 18, 0.2, 1.5, 40, 110, 3400, 25000, 1.5, 0.5)
+        obj_num = self.findLegs(input_image,obj, lidar_image, red,6,30, 4, 30, 0.7, 3.0, 30, 100, 10000, 25000, 1.5, 0.3)
 
         #人間の位置と方向を計算(ローカル座標系)
         self.calcHumanPoseVer2(obj_num,obj,human)
