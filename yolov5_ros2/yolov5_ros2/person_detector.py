@@ -61,7 +61,7 @@ class PersonDetector(Node):
             img_msg = self.bridge.cv2_to_imgmsg(self.img, "bgr8")
 
         response.result = img_msg
-
+        response.environment_image = self.img
         return response
 
 def main(args=None):

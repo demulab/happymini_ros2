@@ -26,8 +26,9 @@ class AttributeRecog(Node):
     def detection_callback(self, msg : DetectionResult):
         img = self.findPerson(msg)
         self.count += 1
-        cv2.imwrite("/home/demulab/data/{0}.png".format(self.count), self.bridge.imgmsg_to_cv2(img, "bgr8"))
-        result = self.execute(img)
+        #cv2.imwrite("/home/demulab/data/{0}.png".format(self.count), self.bridge.imgmsg_to_cv2(img, "bgr8"))
+        print("calling request")
+        result = self.execute(img, msg.environment_image)
         print(result)
 
     def findPerson(self, msg : DetectionResult) -> Image:
@@ -40,9 +41,10 @@ class AttributeRecog(Node):
         return img
 
 
-    def execute(self, img : Image) -> str:
+    def execute(self, img : Image, env_img : Image) -> str:
         self.__req = AttributeRecognition.Request()
         self.__req.input = img
+        self.__req.environment_image = env_img
         self.future = self.__client.call_async(self.__req)
         rclpy.spin_until_future_complete(self.node, self.future)
 

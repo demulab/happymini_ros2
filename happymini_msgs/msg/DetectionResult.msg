@@ -1,3 +1,4 @@
+sensor_msgs/Image environment_image
 sensor_msgs/Image[] images
 geometry_msgs/Vector3[] poses
 string[] tags

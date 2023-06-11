@@ -5,7 +5,6 @@
 import rclpy
 from rclpy.node import Node
 from happymini_msgs.srv import AttributeRecognition
-from .infer_deepmar import AttributeRecognizer, AttributeInfo
 from .unique_attribute_recognizer import UniqueAttributeRecognizer
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
@@ -26,9 +25,10 @@ class AttributeRecognizeNode(Node):
 
 
     def recognizeAttribute(self, request, response):
-        img = self.__bridge.imgmsg_to_cv2(request.input)    
+        img = self.__bridge.imgmsg_to_cv2(request.input)
+        env_img = self.__bridge.imgmsg_to_cv2(request.environment_image)    
         #result = self.__attribute_recognizer.recognizeAttributesNumpy(img)
-        result = self.__attribute_recognizer.recognizeAttributes(img)
+        result = self.__attribute_recognizer.recognizeAttributes(img, env_img)
         response.result = result
         return response
 

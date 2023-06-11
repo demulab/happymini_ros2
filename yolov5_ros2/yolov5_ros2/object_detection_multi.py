@@ -40,6 +40,8 @@ class ObjectDetection(Node):
 
         detection_result = DetectionResult()
         
+        detection_result.environment_image = msg
+
         cv2.imshow('result', img)
         cv2.waitKey(1)
         for i, r in enumerate(result):

@@ -171,9 +171,10 @@ class AttributeRecog(Node):
         self.__req = None
         self.future = None 
 
-    def execute(self, img : Image) -> str:
+    def execute(self, img : Image, env_img : Image) -> str:
         self.__req = AttributeRecognition.Request()
         self.__req.input = img
+        self.__req.environment_image = env_img
         self.future = self.__client.call_async(self.__req)
         rclpy.spin_until_future_complete(self.node, self.future)
 
@@ -195,7 +196,7 @@ class PersonDetector(Node):
         self.__bridge = CvBridge()
         self.__cnt = 0
 
-    def execute(self) -> Image:
+    def execute(self) -> DetectPerson.Response:
         self.__req = DetectPerson.Request()
         self.future = self.__client.call_async(self.__req)
         rclpy.spin_until_future_complete(self.node, self.future)
@@ -209,7 +210,7 @@ class PersonDetector(Node):
             self.__cnt += 1
         else:
            self.get_logger().info('サービスが応答しませんでした。')
-        return response.result    
+        return response    
 
     
 def main():
@@ -232,13 +233,13 @@ def main():
         name = tc.stt_send_request()
         #name = sp.execute()
         name_d = tc.nd_send_request(name)
-        img = per.execute()
+        res = per.execute()
         nb.execute('fmm_Operator')
         time.sleep(1.0)
         #tc.tts_send_request("Name is " + name_d)
         synthesis2("Name is " + name_d)
         #synthesis2("Name is " + name)
-        attribute_sentence = at.execute(img)
+        attribute_sentence = at.execute(res.result, res.environment_image)
         #tc.tts_send_request(attribute_sentence)
         synthesis2(attribute_sentence)
  
@@ -250,13 +251,13 @@ def main():
         name = tc.stt_send_request()
         #name = sp.execute()
         name_d = tc.nd_send_request(name)
-        img = per.execute()
+        res = per.execute()
         nb.execute('fmm_Operator')
         time.sleep(1.0)
         #tc.tts_send_request("Name is " + name_d)
         synthesis2("Name is " + name_d)
         #synthesis2("Name is " + name)
-        attribute_sentence = at.execute(img)
+        attribute_sentence = at.execute(res.result, res.environment_image)
         #tc.tts_send_request(attribute_sentence)
         synthesis2(attribute_sentence)
 

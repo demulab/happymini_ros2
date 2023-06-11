@@ -1,3 +1,4 @@
+import torch
 import numpy as np
 import cv2
 from PIL import Image as PILImage
@@ -16,21 +17,30 @@ class UniqueAttributeRecognizer:
             'retinaface', 
             'mediapipe'
         ]
-        self.processor = AutoProcessor.from_pretrained("microsoft/git-large-r-textcaps")
-        self.model = AutoModelForCausalLM.from_pretrained("microsoft/git-large-r-textcaps")         
+
+        self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
+        self.processor = AutoProcessor.from_pretrained("microsoft/git-base-coco")
+        self.model = AutoModelForCausalLM.from_pretrained("microsoft/git-base-coco")        
+        self.model.to(self.device)
+        #self.processor = AutoProcessor.from_pretrained("microsoft/git-large-r-textcaps")
+        #self.model = AutoModelForCausalLM.from_pretrained("microsoft/git-large-r-textcaps")         
 
 
-    def recognizeAttributes(self, image : np.ndarray) -> str:
+    def recognizeAttributes(self, image : np.ndarray, env_img : np.ndarray) -> str:
         """
         Recognize attributes.
         Returns:
         - str : attribute information
         """
-        pil_img = PILImage.fromarray(image).convert("RGB")
-        pixel_values = self.processor(images=pil_img, return_tensors="pt").pixel_values    
+        print("received requests")
+        pil_img = PILImage.fromarray(env_img).convert("RGB")
+
+        demographics = self.recognizeFace(image)
+        pixel_values = self.processor(images=pil_img, return_tensors="pt").to(self.device).pixel_values    
         generated_ids = self.model.generate(pixel_values=pixel_values, max_length=50)
         generated_caption = self.processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
-        demographics = self.recognizeFace(image)
+        #generated_caption = ""
+
         sentence = self.attributesToSentence(generated_caption, demographics)
         return sentence
 
@@ -63,7 +73,7 @@ class UniqueAttributeRecognizer:
 
 
         pron = pronoun[demographics["dominant_gender"].lower()]
-        gender_sentence = "{0} is {1}.".format(pron, gender_words[demographics["dominant_gender"]])
+        gender_sentence = "{0} is {1}.".format(pron, gender_words[demographics["dominant_gender"].lower()])
         
         young_words = ["boy", "child", "girl", "teenager", "baby", "infant", "junior"]
         old_words = ["elderly", "old", "aged", "senior"]
