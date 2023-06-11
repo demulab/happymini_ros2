@@ -329,8 +329,9 @@ class CarryMyLuggage(Node):
 
 
 def main():
-    rclpy.init()
     global speech
+
+    rclpy.init()
     speech = Speech()
     cml = CarryMyLuggage()
     cml.execute()
