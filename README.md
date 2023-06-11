@@ -1,5 +1,5 @@
 # happymini_ros2
-# 開発中
+# 550点
 ## 設定
 以下3種のウエイポイントを登録する
 1. fmm_Operator : オペレータ開始位置
@@ -38,11 +38,15 @@ navigation
 ```bash
 ros2 launch happymini_navigation navigation2.launch.py
 ```
-
 fmm_speech_service
 ```bash
 ros2 run happymini_voice fmm_speech_service
 ```
+name_detect
+```bash
+ros2 run happymini_voice name_detect
+```
+
 realsenseの起動
 ```bash
 ros2 launch realsense2_camera rs_launch.py align_depth.enable:=true
