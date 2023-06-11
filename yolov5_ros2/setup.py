@@ -29,6 +29,7 @@ setup(
             'object_detection = yolov5_ros2.object_detection:main',
             "object_detection_multi = yolov5_ros2.object_detection_multi:main",
             "dump_detection = yolov5_ros2.dump_detection_results:main",
+            "dump_fisheye = yolov5_ros2.dump_fisheye:main",
             'object_detection_tf = yolov5_ros2.object_detection_tf:main',
             'object_detection_srv = yolov5_ros2.object_detection_srv:main',
             'person_detector = yolov5_ros2.person_detector:main',

@@ -6,6 +6,7 @@ import rclpy
 from rclpy.node import Node
 from happymini_msgs.srv import AttributeRecognition
 from .infer_deepmar import AttributeRecognizer, AttributeInfo
+from .unique_attribute_recognizer import UniqueAttributeRecognizer
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
 from cv_bridge import CvBridge, CvBridgeError
@@ -19,13 +20,15 @@ class AttributeRecognizeNode(Node):
         self.__resource_path =str(get_package_share_directory("attribute_recognition"))
         print(self.__resource_path)
         self.__resource_path += "/../ament_index/resource_index/packages/"
-        self.__attribute_recognizer = AttributeRecognizer(weights_path=self.__resource_path+"deepmar")
+        self.__attribute_recognizer = UniqueAttributeRecognizer()
+        #self.__attribute_recognizer = AttributeRecognizer(weights_path=self.__resource_path+"deepmar")
         self.service = self.create_service(AttributeRecognition, "/fmm_attrib_service/recognize", self.recognizeAttribute)
 
 
     def recognizeAttribute(self, request, response):
         img = self.__bridge.imgmsg_to_cv2(request.input)    
-        result = self.__attribute_recognizer.recognizeAttributesNumpy(img)
+        #result = self.__attribute_recognizer.recognizeAttributesNumpy(img)
+        result = self.__attribute_recognizer.recognizeAttributes(img)
         response.result = result
         return response
 

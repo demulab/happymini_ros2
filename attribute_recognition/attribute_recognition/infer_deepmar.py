@@ -4,6 +4,7 @@ import numpy as np
 import cv2
 from PIL import Image as PILImage
 from deepface import DeepFace
+from transformers import AutoProcessor, AutoModelForCausalLM
 from .attributeinfo import AttributeInfo
         
 
@@ -26,6 +27,8 @@ class AttributeRecognizer:
             'retinaface', 
             'mediapipe'
         ]
+        self.processor = AutoProcessor.from_pretrained("microsoft/git-large-r-textcaps")
+        self.model = AutoModelForCausalLM.from_pretrained("microsoft/git-large-r-textcaps")        
 
 
     def preprocessROSImage(self, image :np.ndarray):
