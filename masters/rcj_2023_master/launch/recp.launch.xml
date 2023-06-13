@@ -1,0 +1,20 @@
+<launch>
+  <arg name="align_depth.enable" value = "true" />
+  
+  <include file="$(find-pkg-share happymini_navigation)/launch/navigation2.launch.py" />
+  <include file="$(find-pkg-share realsense2_camera)/launch/rs_launch.py">
+    <arg name="align_depth.enable" value="$(arg aligh_depth.enable)"/>
+  </include>
+  <node pkg="happymini_voice" exec="fmm_speech_service" name="fmm_speech_service" />
+  <node pkg="happymini_voice" exec="name_detect" name="name_detect">
+    <param from="$(find-pkg-share happymini_voice)/config/recp_name.yaml" />
+  </node>
+  <node pkg="v4l2_camera" exec="v4l2_camera_node">
+    <param name="video_device" type="string" value="/dev/video2" />
+  </node>
+  <node pkg="attribute_recognition" exec="attribute_recog_node" name="attribute_recog_node" />
+  <node pkg="yolov5_ros2" exec="object_detection_tf" name="object_detection_tf" />
+  <node pkg="yolov5_ros2" exec="person_detector" name="person_detector" />
+  <node pkg="approach_person" exec="approach_person" name="approach_person" />
+  <node pkg="rcj_2023_master" exec="find_my_mates_2023" name="find_my_mates_2023"/>
+</launch>
