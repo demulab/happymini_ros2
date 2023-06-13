@@ -27,12 +27,6 @@ class SpeechToTextServer(Node):
     # whisperでマイクから文字起こし
     def transcription(self, model, recognizer):
         with sr.Microphone(sample_rate=16_000) as source:
-            #print(recognizer.energy_threshold)
-            try:
-                audio = recognizer.listen(source, timeout=1, phrase_time_limit=1)
-            except sr.exceptions.WaitTimeoutError:
-                pass
-            #print("なにか話してください")
             self.get_logger().info("Please say anything ...")
             playsound.playsound(self.signal_file, True)
             #print(recognizer.energy_threshold)
