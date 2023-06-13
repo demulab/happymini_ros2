@@ -32,6 +32,7 @@ setup(
             "dump_fisheye = yolov5_ros2.dump_fisheye:main",
             'object_detection_tf = yolov5_ros2.object_detection_tf:main',
             'object_detection_srv = yolov5_ros2.object_detection_srv:main',
+            'empty_seat_finder = yolov5_ros2.empty_seat_finder:main',
             'person_detector = yolov5_ros2.person_detector:main',
             'camera_suv = yolov5_ros2.camera_suv:main',
             'happymini_sekkin = yolov5_ros2.happymini_sekkin'
