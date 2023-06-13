@@ -32,11 +32,11 @@ kFollowMaxDistance = 2.0                #追従距離の最大
 kFollowDistance    = 0.4                #人からこの距離で追従する
 kFollowMinDistance = 0.3                #追従距離の最小
 kFollowAngle       = 180.0              #探す範囲は正面のこの角度[deg]
-kGainLinear        = 0.7                #P制御比例ゲイン
-kKp                = 0.8                #PD制御ゲイン(回転)
-kKd                = 0.5                #
-kLinearMaxSpeed    = 0.3                #並進の最大速度
-kTurnMaxSpeed      = 0.7                #角速度　最大3.14[rad/s]
+kGainLinear        = 0.6                #P制御比例ゲイン
+kKp                = 0.5                #PD制御ゲイン(回転)
+kKd                = 0.3                #
+kLinearMaxSpeed    = 0.2                #並進の最大速度
+kTurnMaxSpeed      = 0.3                #角速度　最大3.14[rad/s]
 
 kDefaultDetectPosX	= 250.0             #検出範囲のxの初期の中心座標[px]
 kDefaultDetectPosY = 200.0              #検出範囲のyの初期の中心座標[px]
