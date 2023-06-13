@@ -7,14 +7,14 @@ from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 from rclpy.utilities import remove_ros_args
-from happymini_msgs.msg import DetectionResult
+from happymini_msgs.srv import DetectEmptyChair
 from yolov5_ros2.detector import Detector, parse_opt
 
 
-class ObjectDetection(Node):
+class EmptySeatFinder(Node):
 
     def __init__(self, **args):
-        super().__init__('object_detection')
+        super().__init__('empty_seat_finder')
 
         self.detector = Detector(**args)
 
@@ -25,46 +25,108 @@ class ObjectDetection(Node):
             'image_raw',
             self.image_callback,
             qos_profile_sensor_data)
-        self.pub = self.create_publisher(DetectionResult, "/fmm/detection_results", 10)
-
+        self.service = self.create_service(
+            DetectEmptyChair, 'fmm_person_service/detect', self.detectEmptyChair)
         
     def image_callback(self, msg):
         try:
-            img0 = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+            self.img = self.bridge.imgmsg_to_cv2(msg, "bgr8")
         except CvBridgeError as e:
             self.get_logger().warn(str(e))
             return
-
-        new_img = img0.copy()
-        img, result = self.detector.detect(img0)
-
-        detection_result = DetectionResult()
         
-        detection_result.environment_image = msg
+    
+    def detectEmptyChair(self, request : DetectEmptyChair.Request, response : DetectEmptyChair.Response) -> DetectEmptyChair.Response:
 
-        cv2.imshow('result', img)
-        cv2.waitKey(1)
+        new_img = self.img.copy()
+        img, result = self.detector.detect(new_img)
+
+
+        chair = []
+        people = []
+
         for i, r in enumerate(result):
-            v1 = round(r.v1)
-            v2 = round(r.v2)
-            u1 = round(r.u1)
-            u2 = round(r.u2)
-            img_msg = self.bridge.cv2_to_imgmsg(new_img[v1:v2+1, u1:u2+1], "bgr8")
-            detection_result.images.append(img_msg)
-            detection_result.tags.append(r.name)
-            detection_result.likelihood.append(r.conf)
+            if r.name == "chair":
+                chair_info = dict()
+                chair_info["v1"] = round(r.v1)
+                chair_info["v2"] = round(r.v2)
+                chair_info["u1"] = round(r.u1)
+                chair_info["u2"] = round(r.u2)
+                chair.append(chair_info)
+            if r.name == "people":
+                people_info = dict()
+                people_info["v1"] = round(r.v1)
+                people_info["v2"] = round(r.v2)
+                people_info["u1"] = round(r.u1)
+                people_info["u2"] = round(r.u2)
+                people.append(people_info)
 
-            
-            #self.get_logger().info(
-            #    f'{i}: ({r.u1}, {r.v1}) ({r.u2}, {r.v2})' +
-            #    f' {r.name}, {r.conf:.3f}')
-        self.pub.publish(detection_result)
+        
+        full_seats = []
+
+
+        #remove full seats from IOU parameter
+        for i in range(len(chair)):
+            for j in range(len(people)):
+                if self.calculateIOU(chair[i], people[j]) >= 0.8:
+                    full_seats.append(i)
+                    break
+
+        empty_seats = []
+
+        # store empty seats
+        for i in range(len(chair)):
+            if i in full_seats:
+                continue
+            else:
+                empty_seats.append(i)
+
+        #calculate yaw angle 
+        for i in range(len(empty_seats)):
+            yaw = self.calculateYawAngle(chair[empty_seats[i]], 1920, 180)
+            response.angles.append(yaw)
+
+        return response
+
+        
+        
+
+
+    def calculateYawAngle(self, target : dict, width : int, fov : int) -> float:
+        center = width/2
+        pix_angle = float(fov/width)
+
+        x = int((target["u1"] + target["u2"])/2)
+        yaw = float(x - center) * pix_angle
+        return yaw
+
+
+    def calculateIOU(self, A : dict, B :dict) -> float:
+        x_a = int((A["u1"] + A["u2"])/2)
+        y_a = int((A["v1"] + A["v2"])/2)
+        x_b = int((B["u1"] + B["u2"])/2)
+        y_b = int((B["v1"] + B["v2"])/2)
+
+
+        w_a = A["u2"] - A["u1"]
+        h_a = A["v2"] - A["v1"]
+        w_b = B["u2"] - B["u1"]
+        h_b = B["v2"] - B["v1"]
+
+        dx = min(A["u2"], B["u2"]) - max(A["u1"], B["u1"])
+        dy = min(A["v2"], B["v2"]) - max(A["v1"], B["v1"])
+
+
+        if dx > 0 and dy > 0:
+            return float(dx * dy )/float(w_a * h_a + w_b * h_b - dx*dy)
+        else:
+            return 0
             
 
 def main():
     rclpy.init()
     opt = parse_opt(remove_ros_args(args=sys.argv))
-    node = ObjectDetection(**vars(opt))
+    node = EmptySeatFinder(**vars(opt))
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
