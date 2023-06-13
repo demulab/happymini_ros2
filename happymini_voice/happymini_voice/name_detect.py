@@ -11,8 +11,17 @@ from nltk.cluster.util import cosine_distance
 class NameDetectServer(Node):
     def __init__(self):
         super().__init__('name_detect')
+        self.declare_parameters(
+            namespace='',
+            parameters=[
+                ('name', rclpy.Parameter.Type.STRING_ARRAY),
+                ('drinks', None),
+                ('gender', None),
+            ])
+
         self.create_service(NameDetect, 'nd', self.calculate_similarity)
-        self.word_list = ["amelia", "angel", "ava", "charlie", "charlotte", "hunter", "max", "mia", "olivia", "parker", "sam", "jack", "noah", "thomas", "whilliam"]
+        self.word_list = self.get_parameter("name")
+        #["amelia", "angel", "ava", "charlie", "charlotte", "hunter", "max", "mia", "olivia", "parker", "sam", "jack", "noah", "thomas", "whilliam"]
 
 
     def calculate_similarity(self, srv_req, srv_res):

@@ -1,0 +1,19 @@
+name_detect:
+  ros__parameters:
+    name: ["amelia", "angel", "ava", "charlie", "charlotte", "hunter", "max", "mia", "olivia", "parker", "sam", "jack", "noah", "thomas", "whilliam"]
+    gender:
+      amelia: "female"
+      angel : "female"
+      ava : "female"
+      charlie : "male"
+      charlotte : "male"
+      hunter : "male"
+      max: "male"
+      olivia : "female"
+      parker : "male"
+      sam : "male"
+      jack: "male"
+      noah: "male"
+      thomas : "male"
+      whilliam : "male"
+
