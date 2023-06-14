@@ -24,7 +24,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'carry_my_luggage_france2023 = rcfrance_2023_master.carry_my_luggage_france2023:main'
+            'carry_my_luggage_france2023 = rcfrance_2023_master.carry_my_luggage_france2023:main',
+            'receptionist_france2023 = rcfrance_2023_master.receptionist_france2023:main'
         ],
     },
 )
