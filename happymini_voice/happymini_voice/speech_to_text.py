@@ -18,34 +18,38 @@ class SpeechToTextServer(Node):
     def __init__(self):
         super().__init__('speech_to_text')
         self.create_service(SpeechToText, 'stt', self.listen)
-        self.get_logger().info("Ready ...")
         self.signal_file = os.path.join(
                 get_package_share_directory('happymini_voice'),
                 'config',
+                'sound_effect',
                 'signal_sound.mp3')
+        self.model = whisper.load_model("medium",device="cpu")
+        _ = self.model.half()
+        _ = self.model.cuda()
+        for m in self.model.modules():
+            if isinstance(m, whisper.model.LayerNorm):
+                m.float()
+        self.recognizer = sr.Recognizer()
+        self.recognizer.dynamic_energy_threshold = True
+        self.get_logger().info("Ready to set /sst server")
 
     # whisperでマイクから文字起こし
     def transcription(self, model, recognizer):
         with sr.Microphone(sample_rate=16_000) as source:
-            self.get_logger().info("Please say anything ...")
-            playsound.playsound(self.signal_file, True)
-            #print(recognizer.energy_threshold)
-            recognizer.dynamic_energy_threshold = False
-            distance = 0.5
-            #recognizer.energy_threshold = recognizer.energy_threshold + 60
-            x = recognizer.energy_threshold
-            dis = 0.5/distance
-            sik = 300/x
-            y = math.sqrt((x+60)**2/x**2-1)
-            recognizer.energy_threshold = math.sqrt(x**2+(x*dis*sik*y)**2)
-            #recognizer.energy_threshold = recognizer.energy_threshold * 1.8 * (0.5/distance)
-            #print(recognizer.energy_threshold)
+            # ノイズ除去のため環境音を取得する
             try:
-                audio = recognizer.listen(source, timeout=5, phrase_time_limit=3)
+                recognizer.dynamic_energy_threshold = True
+                _ = recognizer.listen(source, timeout=1, phrase_time_limit=1)
+                recognizer.dynamic_energy_threshold = False
             except sr.exceptions.WaitTimeoutError:
                 pass
-    
-        #print("音声処理中 ...")
+            self.get_logger().info("Please say anything ...")
+            playsound.playsound(self.signal_file, True)  # シグナル音
+            # 音声を聞く
+            print(f'{recognizer.energy_threshold}')
+            recognizer.energy_threshold *= 1.2
+            audio = recognizer.listen(source, timeout=20)
+        # 音声処理
         self.get_logger().info("Loading ...")
         wav_bytes = audio.get_wav_data()
         wav_stream = BytesIO(wav_bytes)
@@ -68,17 +72,9 @@ class SpeechToTextServer(Node):
             yes_no = 'NULL'
         return yes_no
 
-    def listen(self, srv_req, srv_res):
+    def listen(self, srv_req, srv_res):    
         self.get_logger().info(f"Command: {srv_req.cmd}")
-        model = whisper.load_model("medium",device="cpu") #medium
-        _ = model.half()
-        _ = model.cuda()
-        for m in model.modules():
-            if isinstance(m, whisper.model.LayerNorm):
-                m.float()
-        recognizer = sr.Recognizer()
-        recognizer.dynamic_energy_threshold = True
-        result = self.transcription(model, recognizer)
+        result = self.transcription(self.model, self.recognizer)
         self.get_logger().info(f"{result}")
         srv_res.result = result
         if srv_req.cmd == 'yes_no':

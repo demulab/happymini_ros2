@@ -16,6 +16,7 @@ class JointController(Node):
         # Subscriber
         #self.create_subscription()
         # Value
+        self.wrist_param = 30
         self.joint_angle_list = []
         self.gripper_close = False
         self.joint_names = [
@@ -29,7 +30,7 @@ class JointController(Node):
     def inverse_kinematics(self, coordinate):
         x = coordinate[0]
         y = coordinate[1]
-        l0 = 0.55
+        l0 = 0.49
         l1 = 0.128
         l2 = 0.124
         l3 = 0.126
@@ -45,14 +46,16 @@ class JointController(Node):
                 gripper = math.radians(55)
             else:
                 gripper = math.radians(-90)
-            angle_list = list(map(math.degrees, [0.0, shoulder_angle, elbow_angle, wrist_angle, gripper]))
+            angle_list = list(map(math.degrees, [math.radians(90), shoulder_angle, elbow_angle, wrist_angle, gripper]))
             return angle_list
         except ValueError:
             self.get_logger().info('Can not move arm.')
             return [numpy.nan]*5
 
     def publish_joint(self, joint_angle, execute_time=2):
+        #ljoint_angle[3] += self.wrist_param
         # deg => rad
+        print(joint_angle)
         joint_angle = list(map(math.radians, joint_angle))
         # メッセージの作成
         msg = JointTrajectory()
@@ -75,15 +78,17 @@ class JointController(Node):
             self.joint_angle_list[4] = -90
         self.publish_joint(self.joint_angle_list, 2)
 
-
-#class ManipulateArm(JointController):
-#    def __init__(self):
-#        super(ManipulateArm, self).__init__()
-#        
-#
     def manipulation(self, coordinate):
         self.joint_angle_list = self.inverse_kinematics(coordinate)
         self.publish_joint(self.joint_angle_list, 2)
+
+    def give(self):
+        self.joint_angle_list = [90, 45, -45, -90, -90]
+        self.publish_joint(self.joint_angle_list)
+
+    def carry(self):
+        self.joint_angle_list = [90, -40, 40, 10, -90]
+        self.publish_joint(self.joint_angle_list)
 
     def start_up(self):
         self.joint_angle_list = [90, -90, 90, 0.0, -90]
@@ -95,13 +100,13 @@ class JointController(Node):
 def main():
     rclpy.init()
     jc_node = JointController()
-    #jc_node.send_goal()
-    jc_node.start_up()
     #jc_node.manipulation([0.3, 0.5])
-    #jc_node.manipulation([0.3, 0.4])
-    #jc_node.gripper(False)
-    #jc_node.manipulation([0.3, 0.45])
     #jc_node.gripper(True)
-    #jc_node.start_up()
+    jc_node.start_up()
+    #jc_node.give()
+    #jc_node.manipulation([0.3, 0.38])
+    #jc_node.joint_angle_list[3] = 43
+    #jc_node.publish_joint(jc_node.joint_angle_list)
+    #jc_node.carry()
     jc_node.destroy_node()
     rclpy.shutdown()

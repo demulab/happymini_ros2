@@ -45,10 +45,6 @@ class GraspBagServer(Node):
         self._action_server = ActionServer(self, GraspBag, 'grasp_bag_server', self.execute)
         # Client
         self.blc_node = BagLocalizationClient()
-        #self.bl_srv = self.create_client(BagLocalization, 'bag_localization_server')
-        #while not self.bl_srv.wait_for_service(timeout_sec=1.0):
-        #    self.get_logger().info("bag_localization_server is not here ...")
-        #self.bl_srv_req = BagLocalization.Request()
         # Module
         self.bc_node = BaseControl()
         self.jc_node = JointController()
@@ -61,41 +57,39 @@ class GraspBagServer(Node):
         self.get_logger().info("Executing grasp_bag_action_server ...")
         self.jc_node.start_up()
         # 1段階目
-        bag_info = self.blc_node.request_send(left_right, scan_range=60)
-        #bag_info = self.bl_srv_request_send(left_right)
         feedback_msg = GraspBag.Feedback()
         feedback_msg.state = "Estimating bag location ..."
         goal_handle.publish_feedback(feedback_msg)
+        bag_info = self.blc_node.request_send(left_right, scan_range=70)
         self.get_logger().info(f"Bag info >>> {bag_info}")
-        self.bc_node.rotate_angle(bag_info['angle_to_bag'])
+        feedback_msg.state = "Approaching a bag"
+        goal_handle.publish_feedback(feedback_msg)
+        self.bc_node.rotate_angle(bag_info['angle_to_bag'], precision=0, speed=0.2, time_out=10)
         time.sleep(1.0)
-        self.bc_node.translate_dist((bag_info['distance_to_bag'] - 0.35)/2, 0.1)
+        self.bc_node.translate_dist((bag_info['distance_to_bag'] - 0.15)/2, 0.1)
         # 2段階目
         feedback_msg.state = "Re: Estimating bag location ..."
         goal_handle.publish_feedback(feedback_msg)
-        bag_info = self.blc_node.request_send('all')
-        #bag_info = self.bl_srv_request_send('all')
+        bag_info = self.blc_node.request_send('all', 100)
         self.get_logger().info(f"Bag info >>> {bag_info}")
-        self.bc_node.rotate_angle(bag_info['angle_to_bag'])
+        self.bc_node.rotate_angle(bag_info['angle_to_bag'], precision=0, speed=0.2, time_out=10)
+        #self.bc_node.translate_dist((bag_info['distance_to_bag'] - 0.1)/2, 0.05)
         if left_right == 'left':
             move_angle = -1*move_angle
         time.sleep(0.5)
-        self.bc_node.rotate_angle(move_angle)
+        self.bc_node.rotate_angle(move_angle, precision=0, speed=0.2, time_out=10)
         time.sleep(1.0)
         # 把持
+        feedback_msg.state = "Grasp a bag"
+        goal_handle.publish_feedback(feedback_msg)
         self.jc_node.manipulation([0.2, 0.38])
         self.jc_node.manipulation([0.3, 0.38])
         self.jc_node.joint_angle_list[3] = 43
         self.jc_node.publish_joint(self.jc_node.joint_angle_list)
-        #self.jc_node.manipulation([0.3, 0.5])
-        #self.jc_node.manipulation([0.3, 0.5])
-        
-        #self.bc_node.translate_dist((bag_info['distance_to_bag'] - 0.4)/2, 0.05)
         time.sleep(0.5)
-        self.jc_node.start_up()
+        self.jc_node.carry()
         # レスポンス
         goal_handle.succeed()
-        #result = True
         result = GraspBag.Result()
         result.result = True
         self.get_logger().info(f"Result: {result}")
@@ -106,6 +100,7 @@ def main():
     rclpy.init()
     gbs = GraspBagServer()
     try:
+        gbs.jc_node.start_up()
         rclpy.spin(gbs)
     except KeyboardInterrupt:
         pass

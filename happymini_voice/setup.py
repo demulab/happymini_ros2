@@ -15,7 +15,11 @@ setup(
         (os.path.join('share', package_name, 'launch'),
             glob('launch/*.launch.py')),
         (os.path.join('share', package_name, 'config'),
-            glob('config/*'))
+            glob('config/*.yaml')),
+        (os.path.join('share', package_name, 'config', 'sound_effect'),
+            glob('config/sound_effect/*')),
+        (os.path.join('share', package_name, 'config', 'wav_data', 'cml2023'),
+            glob('config/wav_data/cml2023/*')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,

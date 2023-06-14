@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # happymini_ros2
 # 開発中
 ## 設定
@@ -25,15 +26,23 @@ ros2 run happymini_navigation set_location.py
 ```
 その後、サービス呼び出しでウェイポイントを登録する。
 
+=======
+# Carry My Luggage 50点
+>>>>>>> kanazawa-devel
 ## 実行
 turtlebot3とlidarのポート権限付与
 ```bash
 sudo chmod 666 /dev/ttyACM*
 ```
+<<<<<<< HEAD
+=======
+
+>>>>>>> kanazawa-devel
 bringup
 ```bash
 ros2 launch turtlebot3_bringup robot.launch.py
 ```
+<<<<<<< HEAD
 navigation
 ```bash
 ros2 launch happymini_navigation navigation2.launch.py
@@ -71,8 +80,40 @@ ros2 run yolov5_ros2 person_detector
 approach_person
 ```bash
 ros2 run approach_person approach_person
+=======
+
+open_manipulator_x
+```bash
+ros2 launch open_manipulator_x_description open_manipulator_x.launch.py
+```
+
+grasp_bag
+```bash
+ros2 launch grasp_bag grasp_bag.launch.py
+```
+
+detect_pose
+```bash
+ros2 run detect_pose detect_left_right
+```
+
+chaser_python
+```bash
+ros2 run chaser_python chaser_python
+```
+
+happymini_voice
+```bash
+ros2 run happymini_voice speech_to_text 
+ros2 run happymini_voice tts_coqui 
+>>>>>>> kanazawa-devel
 ```
 
 **マスタープログラム**
 ```bash
+<<<<<<< HEAD
 ros2 run rcj_2023_master find_my_mates_2023
+=======
+ros2 run rcfrance_2023_master carry_my_luggage_france2023
+```
+>>>>>>> kanazawa-devel

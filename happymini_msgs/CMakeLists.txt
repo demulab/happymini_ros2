@@ -21,6 +21,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     "srv/AttributeRecognition.srv"
     "srv/DetectPerson.srv"
     "srv/DetectEmptyChair.srv"
+    "srv/WavPlay.srv"
+    "srv/WavMake.srv"
     "action/GraspBag.action"
     "msg/DetectionResult.msg"
     DEPENDENCIES sensor_msgs
