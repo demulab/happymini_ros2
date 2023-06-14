@@ -89,9 +89,6 @@ class DetectPose(smach.State):
                 tmp_time = time_count
 
     def execute(self, userdata):
-        userdata.left_right_out = 'right'
-        ##########
-        return 'detected'
         speech.tts('/cml2023/start_cml')
         time.sleep(0.5)
         speech.tts('/cml2023/which_bag')
@@ -261,10 +258,10 @@ class Return(smach.State):
         self.node = node
         self.logger = node.get_logger()
         # Service
-        #self.navi = node.create_client(NaviLocation, 'navi_location_server')
-        #while not self.navi.wait_for_service(timeout_sec=1.0) and rclpy.ok():
-        #    self.logger.info("/navi_location_server is not here ...")
-        #self.req = NaviLocation.Request()
+        self.navi = node.create_client(NaviLocation, 'navi_location_server')
+        while not self.navi.wait_for_service(timeout_sec=1.0) and rclpy.ok():
+            self.logger.info("/navi_location_server is not here ...")
+        self.req = NaviLocation.Request()
 
     def do_navigation(self):
         self.req.location_name = 'cml_start'
