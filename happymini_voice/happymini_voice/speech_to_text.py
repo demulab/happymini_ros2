@@ -23,6 +23,14 @@ class SpeechToTextServer(Node):
                 get_package_share_directory('happymini_voice'),
                 'config',
                 'signal_sound.mp3')
+        self.model = whisper.load_model("base",device="cpu") #GPU:medium CPU:base推奨
+        #_ = model.half() #GPUを使う場合はコメントアウトを外してください
+        #_ = model.cuda() #GPUを使う場合はコメントアウトを外してください
+        for m in self.model.modules():
+            if isinstance(m, whisper.model.LayerNorm):
+                m.float()
+        self.recognizer = sr.Recognizer()
+        self.recognizer.dynamic_energy_threshold = True
 
     # whisperでマイクから文字起こし
     def transcription(self, model, recognizer):
@@ -47,7 +55,7 @@ class SpeechToTextServer(Node):
             #recognizer.energy_threshold = recognizer.energy_threshold * 1.8 * (0.5/distance)
             #print(recognizer.energy_threshold)
             try:
-                audio = recognizer.listen(source, timeout=20)
+                audio = recognizer.listen(source, timeout=5, phrase_time_limit=3)
             except sr.exceptions.WaitTimeoutError:
                 pass
     
@@ -76,15 +84,7 @@ class SpeechToTextServer(Node):
 
     def listen(self, srv_req, srv_res):
         self.get_logger().info(f"Command: {srv_req.cmd}")
-        model = whisper.load_model("base",device="cpu") #GPU:medium CPU:base推奨
-        #_ = model.half() #GPUを使う場合はコメントアウトを外してください
-        #_ = model.cuda() #GPUを使う場合はコメントアウトを外してください
-        for m in model.modules():
-            if isinstance(m, whisper.model.LayerNorm):
-                m.float()
-        recognizer = sr.Recognizer()
-        recognizer.dynamic_energy_threshold = True
-        result = self.transcription(model, recognizer)
+        result = self.transcription(self.model, self.recognizer)
         self.get_logger().info(f"{result}")
         srv_res.result = result
         if srv_req.cmd == 'yes_no':

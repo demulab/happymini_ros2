@@ -46,7 +46,7 @@ class TestClient(Node):
 
     def tts_send_request(self, text=None):
         tts_srv_result = 'None'
-        self.tts_srv_req.text = 'You are' + text
+        self.tts_srv_req.text = 'Name is ' + text
 
         tts_srv_future = self.tts_srv.call_async(self.tts_srv_req)
         while not tts_srv_future.done() and rclpy.ok():
