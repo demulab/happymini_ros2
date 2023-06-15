@@ -34,7 +34,8 @@ setup(
             'speech_to_text = happymini_voice.speech_to_text:main',
             'tts_coqui = happymini_voice.tts_coqui:main',
             'name_detect = happymini_voice.name_detect:main',
-            'fmm_speech_service = happymini_voice.fmm_speech_service:main'
+            'fmm_speech_service = happymini_voice.fmm_speech_service:main',
+            'mimic3_play = happymini_voice.mimic3_play:main'
         ],
     },
 )

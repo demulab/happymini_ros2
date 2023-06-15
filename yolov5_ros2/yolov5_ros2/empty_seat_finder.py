@@ -26,7 +26,7 @@ class EmptySeatFinder(Node):
             self.image_callback,
             qos_profile_sensor_data)
         self.service = self.create_service(
-            DetectEmptyChair, 'fmm_person_service/detect', self.detectEmptyChair)
+            DetectEmptyChair, 'recp/find_seat', self.detectEmptyChair)
         
     def image_callback(self, msg):
         try:

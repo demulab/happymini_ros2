@@ -47,8 +47,8 @@ class SpeechToTextServer(Node):
             playsound.playsound(self.signal_file, True)  # シグナル音
             # 音声を聞く
             print(f'{recognizer.energy_threshold}')
-            recognizer.energy_threshold *= 1.2
-            audio = recognizer.listen(source, timeout=20)
+            recognizer.energy_threshold *= 0.7
+            audio = recognizer.listen(source, timeout=3, phrase_time_limit=5)
         # 音声処理
         self.get_logger().info("Loading ...")
         wav_bytes = audio.get_wav_data()

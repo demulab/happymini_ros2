@@ -1,0 +1,7 @@
+mimic3_play_node:
+  ros__parameters:
+    voice: 'en_US/cmu-arctic_low'  # default voice
+    speaker: 'eey'                 # default speaker
+    length_scale: 0.9              # speaking rate
+    noise_scale: 0.667             # speaking variablility
+    noise_w: 1.0                   # phoneme duration variablility
