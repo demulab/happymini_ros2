@@ -1,3 +1,4 @@
+import pyttsx3
 import time
 import rclpy
 from rclpy.node import Node
@@ -75,6 +76,7 @@ class Navigation(smach.State):
         # Call
         future = self.navi.call_async(self.req)
         # Waiting
+        print(f'Start do_navigation')
         while not future.done() and rclpy.ok():
             rclpy.spin_once(self.node, timeout_sec=0.1)
         # Result
@@ -100,12 +102,16 @@ class WaitGuest(smach.State):
     def __init__(self, node):
         smach.State.__init__(
                 self,
-                outcomes=['success'])
+                outcomes=['success'],
+                output_keys=['guest_num_out'])
         # Node
         self.node = node
         self.logger = node.get_logger()
+        self.num_persoon = 0
 
     def execute(self, userdata):
+        self.num_persoon += 1
+        userdata.guest_num_out = self.num_persoon
         time.sleep(1.0)
         return 'success'
 
@@ -116,7 +122,7 @@ class GetInfo(smach.State):
                 self,
                 outcomes=['success'],
                 input_keys=['guest_num_in'],
-                output_keys=['location_name_out', 'name_out', 'drink_out', 'feature_out'])
+                output_keys=['guest_num_in', 'location_name_out', 'name_out', 'drink_out', 'feature_out'])
         # Node
         self.node = node
         self.logger = node.get_logger()
@@ -191,33 +197,43 @@ class GetInfo(smach.State):
         self.pd_future = self.__pd_client.call_async(self.__pd_req)
         rclpy.spin_until_future_complete(self.node, self.pd_future)
         print('Start Person Detector')
+        img_response=None
         while not self.pd_future.done() and rclpy.ok():
             rclpy.spin_once(self.node, timeout_sec=0.1)
         if self.pd_future.result() is not None:
-            response = self.pd_future.result()
-            img_cv = self.__bridge.imgmsg_to_cv2(response.result)
-            cv2.imwrite("~/main_ws/src/happymini_ros/masters/rcj_2023_master/img{0}.png".format(self.__cnt), img_cv)
-            self.__cnt += 1
+            img_response = self.pd_future.result()
+            #img_cv = self.__bridge.imgmsg_to_cv2(response.result)
+            #cv2.imwrite("~/main_ws/src/happymini_ros/masters/rcj_2023_master/img{0}.png".format(self.__cnt), img_cv)
+            #self.__cnt += 1
+            print(img_response.result)
+            print(img_response.environment_image)
         else:
            self.get_logger().info('サービスが応答しませんでした。')
         # AttributeRecog
-        self.__ar_req = AttributeRecognition.Request()
-        self.__ar_req.input = response.result
-        self.__ar_req.environment_image = response.environment_image
-        self.ar_future = self.__ar_client.call_async(self.__ar_req)
-        rclpy.spin_until_future_complete(self.node, self.ar_future)
+        #print("Start AttributeRecognition")
+        #self.__ar_req = AttributeRecognition.Request()
+        #self.__ar_req.input = img_response.result
+        #self.__ar_req.environment_image = img_response.environment_image
+        #print(self.__ar_req.input)
+        #print(self.__ar_req.environment_image)
+        #self.ar_future = self.__ar_client.call_async(self.__ar_req)
+        #rclpy.spin_until_future_complete(self.node, self.ar_future)
 
-        while not self.ar_future.done() and rclpy.ok():
-            rclpy.spin_once(self.node, timeout_sec=0.1)
-        if self.ar_future.result() is not None:
-            response = self.ar_future.result()
-        else:
-           self.get_logger().info('サービスが応答しませんでした。')
+        #while not self.ar_future.done() and rclpy.ok():
+        #    rclpy.spin_once(self.node, timeout_sec=0.1)
+        #if self.ar_future.result() is not None:
+        #    response = self.ar_future.result()
+        #else:
+        #   self.get_logger().info('サービスが応答しませんでした。')
         userdata.name_out = name_d
         userdata.drink_out = drink
-        userdata.feature_out = response.result
+        #userdata.feature_out = response.result
+        #print(userdata.name_out)
+        #print(userdata.drink_out)
+        #print(userdata.feature_out)
         time.sleep(1.0)
         userdata.location_name_out = 'party_room'
+        #print(f'{userdata.gust_num_in}')
         if userdata.guest_num_in == 1:
             return 'success'
         elif userdata.guest_num_in == 2:
@@ -287,11 +303,11 @@ class GuideToSeat(smach.State):
         while not self.future.done() and rclpy.ok():
             rclpy.spin_once(self.node, timeout_sec=0.1)
         if self.future.result() is not None:
-            response = self.future.result()
+            result = self.future.result()
         else:
             self.get_logger().info('サービスが応答しませんでした。')
         # 向く
-        self.bc_node.rotate_angle(angles[0])
+        self.bc_node.rotate_angle(-result.angles[0])
         # しゃべる
         synthesis2('Please sit in the chair in the direction I am facing.')
         userdata.location_name_out = 'wait_position'
@@ -366,7 +382,7 @@ class Receptionist(Node):
             smach.StateMachine.add(
                     'GET_INFO', GetInfo(self),
                     transitions={'success':'NAVIGATION'},
-                    remapping={'guest_num_in':'guest_num',
+                    remapping={'guest_num_in':'guest_num_out',
                                'location_name_out':'location_name',
                                'name_out':'name',
                                'drink_out':'drink',
