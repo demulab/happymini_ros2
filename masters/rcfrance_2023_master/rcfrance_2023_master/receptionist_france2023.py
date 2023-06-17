@@ -10,6 +10,7 @@ from std_msgs.msg import String, Bool
 from geometry_msgs.msg import Twist
 import cv2
 from cv_bridge import CvBridge
+from sensor_msgs.msg import Image
 # Module
 from happymini_manipulation.motor_controller import JointController
 from happymini_teleop.base_control import BaseControl
@@ -43,6 +44,29 @@ def synthesis2(text = None):
     engine.runAndWait()
 
 
+class AttributeRecog(Node):
+    def __init__(self):
+        super().__init__("attrib")
+        self.node = rclpy.create_node('attrib_recog')
+        self.__client = self.node.create_client(AttributeRecognition, '/fmm_attrib_service/recognize')
+        self.__req = None
+        self.future = None
+
+    def execute(self, img : Image, env_img : Image) -> str:
+        self.__req = AttributeRecognition.Request()
+        self.__req.input = img
+        self.__req.environment_image = env_img
+        self.future = self.__client.call_async(self.__req)
+        rclpy.spin_until_future_complete(self.node, self.future)
+
+        while not self.future.done() and rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.1)
+        if self.future.result() is not None:
+            response = self.future.result()
+        else:
+           self.get_logger().info('サービスが応答しませんでした。')
+        return response.result
+
 
 class EnterRoom(smach.State):
     def __init__(self, node):
@@ -54,7 +78,8 @@ class EnterRoom(smach.State):
         self.logger = node.get_logger()
 
     def execute(self, userdata):
-        _ = self.node.tts("Start Receptionist")
+        #_ = self.node.tts("Start Receptionist")
+        synthesis2('Start Receptionist')
         return 'success'
 
 
@@ -135,9 +160,9 @@ class GetInfo(smach.State):
         self.stt_srv_req = SpeechToText.Request()
         self.nd_srv_req = NameDetect.Request()
         # AttributeRecog
-        self.__ar_client = self.node.create_client(AttributeRecognition, 'recp_find_seat')
-        self.__ar_req = None
-        self.ar_future = None
+        #self.__ar_client = self.node.create_client(AttributeRecognition, 'recp_find_seat')
+        #self.__ar_req = None
+        #self.ar_future = None
         # PersonDetector
         self.__pd_client = self.node.create_client(DetectPerson, '/fmm_person_service/detect')
         self.__pd_req = None
@@ -180,7 +205,8 @@ class GetInfo(smach.State):
     def execute(self, userdata):
         name_flg = False
         while not name_flg:
-            _ = self.node.tts('What is your name?')
+            synthesis2('What is your name?')
+            #_ = self.node.tts('What is your name?')
             # Name detect
             name = self.stt_send_request()
             name = name.replace(" ","").replace(".","")
@@ -190,7 +216,8 @@ class GetInfo(smach.State):
                 drink = self.drinks[name_d]
                 name_flg = True
             except KeyError:
-                _ = self.node.tts('Sorry. I did not catch that. Plrease try again.')
+                #_ = self.node.tts('Sorry. I did not catch that. Plrease try again.')
+                synthesis2('Sorry. I did not catch that. Plrease try again.')
                 continue
             print(drink)
         # PersonDetector
@@ -211,6 +238,7 @@ class GetInfo(smach.State):
         else:
            self.get_logger().info('サービスが応答しませんでした。')
         # AttributeRecog
+        attribute_sentence = ar_node.execute(img_response.result, img_response.enviroment_image) 
         #print("Start AttributeRecognition")
         #self.__ar_req = AttributeRecognition.Request()
         #self.__ar_req.input = img_response.result
@@ -228,6 +256,7 @@ class GetInfo(smach.State):
         #   self.get_logger().info('サービスが応答しませんでした。')
         userdata.name_out = name_d
         userdata.drink_out = drink
+        userdata.feature_out = attribute_sentence
         #userdata.feature_out = response.result
         #print(userdata.name_out)
         #print(userdata.drink_out)
@@ -338,19 +367,19 @@ class Receptionist(Node):
             self.get_logger().info("/mimic3_play_server is not here ...")
         self.tts_req = TextToSpeech.Request()
 
-    def tts(self, text):
-        # Msg
-        self.tts_req.text = text
-        # Call
-        future = self.tts_srv.call_async(self.tts_req)
-        while not future.done() and rclpy.ok():
-            rclpy.spin_once(self, timeout_sec=0.1)
-        if future.result() is not None:
-            result = future.result().result
-            return result
-        else:
-            self.get_logger().info("Service call failed")
-            return False
+    #def tts(self, text):
+    #    # Msg
+    #    self.tts_req.text = text
+    #    # Call
+    #    future = self.tts_srv.call_async(self.tts_req)
+    #    while not future.done() and rclpy.ok():
+    #        rclpy.spin_once(self, timeout_sec=0.1)
+    #    if future.result() is not None:
+    #        result = future.result().result
+    #        return result
+    #    else:
+    #        self.get_logger().info("Service call failed")
+    #        return False
 
     def execute(self):
         # Create a SMACH state machine
@@ -411,8 +440,9 @@ class Receptionist(Node):
 
 
 def main():
-    global speech
+    global ar_node
 
     rclpy.init()
+    ar_node = AttributeRecog()
     recp = Receptionist()
     recp.execute()

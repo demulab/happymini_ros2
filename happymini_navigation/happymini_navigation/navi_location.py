@@ -146,5 +146,5 @@ def main(args=None):
         rclpy.spin(navi_location_server)
     except KeyboardInterrupt:
         pass
-    waypoint_navi.destroy_node()
+    #navi_location_server.destroy_node()
     rclpy.shutdown()
