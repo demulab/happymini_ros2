@@ -5,6 +5,7 @@ from PIL import Image as PILImage
 from deepface import DeepFace
 from transformers import AutoProcessor, AutoModelForCausalLM
 import nltk
+import os
 
 class UniqueAttributeRecognizer:
 
@@ -22,16 +23,13 @@ class UniqueAttributeRecognizer:
         #self.processor = AutoProcessor.from_pretrained("microsoft/git-base-coco")
         #self.model = AutoModelForCausalLM.from_pretrained("microsoft/git-base-coco")
         self.model = AutoModelForCausalLM.from_pretrained("microsoft/git-large-r-textcaps")         
-
         self.model.to(self.device)
         self.processor = AutoProcessor.from_pretrained("microsoft/git-large-r-textcaps")
+        
 
 
     def recognizeAttributes(self, image : np.ndarray, env_img : np.ndarray) -> str:
         """
-        Recognize attributes.
-        Returns:
-        - str : attribute information
         """
         print("received requests")
         pil_img = PILImage.fromarray(env_img).convert("RGB")
@@ -115,6 +113,7 @@ class UniqueAttributeRecognizer:
             demographies = DeepFace.analyze(image, 
             detector_backend = self.__facedetect_backends[3]
             )
+
             result = demographies[0]
             result["face_found"] = True
             return result

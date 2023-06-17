@@ -68,18 +68,20 @@ class AttributeRecog(Node):
         return response.result
 
 
-class TrackPersonClient(Node):
+class TrackPerson(Node):
     def __init__(self):
-        super().__init__("track_person") 
-        self.__client = self.create_client(TrackPerson, 'recp/track_person')
+        super().__init__("attrib")
+        self.node = rclpy.create_node('attrib_recog')
+        self.__client = self.node.create_client(AttributeRecognition, '/fmm_attrib_service/recognize')
         self.__req = None
         self.future = None
 
-    def execute(self):
-        self.__req = TrackPerson.Request()
-        self.__req.command = ''
+    def execute(self, img : Image, env_img : Image) -> str:
+        self.__req = AttributeRecognition.Request()
+        self.__req.input = img
+        self.__req.environment_image = env_img
         self.future = self.__client.call_async(self.__req)
-        rclpy.spin_until_future_complete(self, self.future)
+        rclpy.spin_until_future_complete(self.node, self.future)
 
         while not self.future.done() and rclpy.ok():
             rclpy.spin_once(self, timeout_sec=0.1)
@@ -87,7 +89,7 @@ class TrackPersonClient(Node):
             response = self.future.result()
         else:
            self.get_logger().info('サービスが応答しませんでした。')
-        return response.angle
+        return response.result
 
 
 class EnterRoom(smach.State):
@@ -338,7 +340,6 @@ class GuideToSeat(smach.State):
         self.node = node
         self.logger = node.get_logger()
         # Service
-        self.__tp_client = self.node.create_client(TrackPerson, 'recp/track_person')
         self.__client = self.node.create_client(DetectEmptyChair, 'recp/find_seat')
         self.__req = None
         self.future = None
@@ -361,13 +362,8 @@ class GuideToSeat(smach.State):
         # しゃべる
         synthesis2('Please sit in the chair in the direction I am facing.')
         # tracking
-        self.bc_node.rotate_angle(180, presicion=0, speed=0.5, time_out=10)
-        start_time = time.time()
-        while rclpy.ok():
-            if time.time() - start_time > 10:
-                break
-            move_angle = -1 * self.__tp_client.execute()
-            self.bc_node.rotate_angle(move_angle, precision=0, speed=0.4, time_out=3)
+        
+
         userdata.location_name_out = 'wait_position'
         if userdata.guest_num_in == 1:
             userdata.guest_num_out = userdata.guest_num_in + 1
@@ -473,10 +469,9 @@ class Receptionist(Node):
 
 
 def main():
-    global ar_node, tp_node
+    global ar_node
 
     rclpy.init()
     ar_node = AttributeRecog()
-    tp_node = TrackPersonClient()
     recp = Receptionist()
     recp.execute()

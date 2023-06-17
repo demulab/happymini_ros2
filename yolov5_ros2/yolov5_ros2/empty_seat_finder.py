@@ -7,9 +7,10 @@ from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 from rclpy.utilities import remove_ros_args
-from happymini_msgs.srv import DetectEmptyChair
+from happymini_msgs.srv import DetectEmptyChair, TrackPerson
 from yolov5_ros2.detector import Detector, parse_opt
-
+from rclpy.executors import MultiThreadedExecutor
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 
 class EmptySeatFinder(Node):
 
@@ -19,14 +20,23 @@ class EmptySeatFinder(Node):
         self.detector = Detector(**args)
 
         self.bridge = CvBridge()
-
+        chair_cb_group = MutuallyExclusiveCallbackGroup()
+        person_cb_group = None
+        
         self.subscription = self.create_subscription(
             Image,
             'image_raw',
             self.image_callback,
-            qos_profile_sensor_data)
+            qos_profile_sensor_data, callback_group=person_cb_group)
         self.service = self.create_service(
-            DetectEmptyChair, 'recp/find_seat', self.detectEmptyChair)
+            DetectEmptyChair, 'recp/find_seat', self.detectEmptyChair, callback_group=chair_cb_group)
+
+        self.service = self.create_service(
+            TrackPerson, 'recp/track_person', self.trackPerson, callback_group= person_cb_group
+        )
+
+        self.is_tracked = False
+        self.angle = 0
         
     def image_callback(self, msg):
         try:
@@ -40,6 +50,63 @@ class EmptySeatFinder(Node):
         y = (target["v2"] - target["v1"])/2
         return float(x*y)/float(w*h)
 
+    def trackPerson(self, request : TrackPerson.Request, response: TrackPerson.Response) -> TrackPerson.Response:
+
+        new_img = self.img.copy()
+        img, result = self.detector.detect(new_img)
+        cv2.imwrite("/home/demulab/test_data/detect.png", img)
+        img_h, img_w, _ = img.shape
+        print("w, h : {0}, {1}".format(img_w, img_h))
+        
+        people = []
+        
+        for i, r in enumerate(result):
+            print(r.name)
+            if r.name == "person":
+                print("people found")
+                people_info = dict()
+                people_info["v1"] = round(r.v1)
+                people_info["v2"] = round(r.v2)
+                people_info["u1"] = round(r.u1)
+                people_info["u2"] = round(r.u2)
+                people.append(people_info)
+
+        
+        print("{0} people are detected".format(len(people)))
+        people_angles = []
+        #calculate yaw angle 
+        for i in range(len(people)):
+            yaw = self.calculateYawAngle(people[i], img_w, 180)
+            people_angles.append(yaw)
+
+        if self.is_tracked is False:
+            self.is_tracked = True
+            maxarea = 0
+            max_idx = 0
+            print(people)
+            # nearest people as tracking target
+            for i in range(len(people)):
+                area = self.calculateAreaRatio(people[i], img_w, img_h)
+                if area > maxarea:
+                    max_idx = i
+                    maxarea = area
+            response.angle = people_angles[max_idx]
+                
+        else:
+            min_diff = 360
+            min_idx = 0
+            # find nearest person from the last target 
+            for i in range(len(people)):
+                diff = abs(self.angle - people_angles[i])
+                if diff < min_diff:
+                    min_idx = i
+                    min_diff = diff
+
+            response.angle = people_angles[min_idx]
+        self.angle = response.angle
+        return response
+
+    
     def detectEmptyChair(self, request : DetectEmptyChair.Request, response : DetectEmptyChair.Response) -> DetectEmptyChair.Response:
 
         new_img = self.img.copy()
@@ -138,8 +205,11 @@ def main():
     rclpy.init()
     opt = parse_opt(remove_ros_args(args=sys.argv))
     node = EmptySeatFinder(**vars(opt))
+    executor = MultiThreadedExecutor()
+    executor.add_node(node)
     try:
-        rclpy.spin(node)
+        executor.spin()
+        #rclpy.spin(node)
     except KeyboardInterrupt:
         pass
     rclpy.shutdown()
