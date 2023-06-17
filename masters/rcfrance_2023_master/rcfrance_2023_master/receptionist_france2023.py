@@ -43,6 +43,7 @@ def synthesis2(text = None):
     engine.runAndWait()
 
 
+
 class EnterRoom(smach.State):
     def __init__(self, node):
         smach.State.__init__(
@@ -234,12 +235,7 @@ class GetInfo(smach.State):
         time.sleep(1.0)
         userdata.location_name_out = 'party_room'
         #print(f'{userdata.gust_num_in}')
-        if userdata.guest_num_in == 1:
-            return 'success'
-        elif userdata.guest_num_in == 2:
-            return 'secound'
-        else:
-            pass
+        return 'success'
 
 
 class GetFeature(smach.State):
@@ -307,7 +303,7 @@ class GuideToSeat(smach.State):
         else:
             self.get_logger().info('サービスが応答しませんでした。')
         # 向く
-        self.bc_node.rotate_angle(-result.angles[0])
+        self.bc_node.rotate_angle(-1*result.angles[0])
         # しゃべる
         synthesis2('Please sit in the chair in the direction I am facing.')
         userdata.location_name_out = 'wait_position'

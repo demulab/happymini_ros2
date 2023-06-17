@@ -35,13 +35,19 @@ class EmptySeatFinder(Node):
             self.get_logger().warn(str(e))
             return
         
-    
+    def calculateAreaRatio(self, target: dict, w: int, h: int) -> float:
+        x = (target["u2"] - target["u1"])/2
+        y = (target["v2"] - target["v1"])/2
+        return float(x*y)/float(w*h)
+
     def detectEmptyChair(self, request : DetectEmptyChair.Request, response : DetectEmptyChair.Response) -> DetectEmptyChair.Response:
 
         new_img = self.img.copy()
         img, result = self.detector.detect(new_img)
-
-
+        cv2.imwrite("/home/demulab/test_data/detect.png", img)
+        img_h, img_w, _ = img.shape
+        print("w, h : {0}, {1}".format(img_w, img_h))
+        
         chair = []
         people = []
 
@@ -52,7 +58,12 @@ class EmptySeatFinder(Node):
                 chair_info["v2"] = round(r.v2)
                 chair_info["u1"] = round(r.u1)
                 chair_info["u2"] = round(r.u2)
-                chair.append(chair_info)
+                if self.calculateAreaRatio(chair_info, img_w, img_h) > 0.005:
+                    print("chair is in the near range")
+                    chair.append(chair_info)
+                else:
+                    print("removing far chairs")
+                    print("area : {0}".format(self.calculateAreaRatio(chair_info, img_w, img_h)))
             if r.name == "people":
                 people_info = dict()
                 people_info["v1"] = round(r.v1)
@@ -83,7 +94,7 @@ class EmptySeatFinder(Node):
 
         #calculate yaw angle 
         for i in range(len(empty_seats)):
-            yaw = self.calculateYawAngle(chair[empty_seats[i]], 1920, 180)
+            yaw = self.calculateYawAngle(chair[empty_seats[i]], img_w, 180)
             response.angles.append(yaw)
 
         return response
