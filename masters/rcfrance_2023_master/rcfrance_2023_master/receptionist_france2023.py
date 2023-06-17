@@ -1,6 +1,8 @@
+import math
 import pyttsx3
 import time
 import rclpy
+from subprocess import call
 from rclpy.node import Node
 from rclpy.action import ActionClient
 from rclpy.parameter import Parameter
@@ -337,37 +339,72 @@ class GuideToSeat(smach.State):
         # Node
         self.node = node
         self.logger = node.get_logger()
+        # Publisher
+        self.twist_pub = self.node.create_publisher(Twist, '/cmd_vel', 10)
         # Service
-        self.__tp_client = self.node.create_client(TrackPerson, 'recp/track_person')
         self.__client = self.node.create_client(DetectEmptyChair, 'recp/find_seat')
         self.__req = None
         self.future = None
         # Module
         self.bc_node = BaseControl()
+        # Value
+        self.twist = Twist()
 
     def execute(self, userdata):
-        self.__req = DetectEmptyChair.Request()
-        self.__req.command = ""
-        self.future = self.__client.call_async(self.__req)
-        rclpy.spin_until_future_complete(self.node, self.future)
-        while not self.future.done() and rclpy.ok():
-            rclpy.spin_once(self.node, timeout_sec=0.1)
-        if self.future.result() is not None:
-            result = self.future.result()
-        else:
-            self.get_logger().info('サービスが応答しませんでした。')
-        # 向く
-        self.bc_node.rotate_angle(-1*result.angles[0])
-        # しゃべる
-        synthesis2('Please sit in the chair in the direction I am facing.')
-        # tracking
-        self.bc_node.rotate_angle(180, presicion=0, speed=0.5, time_out=10)
+        #self.__req = DetectEmptyChair.Request()
+        #self.__req.command = ""
+        #self.future = self.__client.call_async(self.__req)
+        #rclpy.spin_until_future_complete(self.node, self.future)
+        #while not self.future.done() and rclpy.ok():
+        #    rclpy.spin_once(self.node, timeout_sec=0.1)
+        #if self.future.result() is not None:
+        #    result = self.future.result()
+        #else:
+        #    self.get_logger().info('サービスが応答しませんでした。')
+        ## 向く
+        #self.bc_node.rotate_angle(-1*result.angles[0])
+        ## しゃべる
+        #synthesis2('Please sit in the chair in the direction I am facing.')
+        ## tracking
+        #self.bc_node.rotate_angle(180, precision=0, speed=0.5, time_out=10)
+        #time.sleep(1.0)
         start_time = time.time()
+
+        move_angle = 0
+        cnt = 0
+        
         while rclpy.ok():
-            if time.time() - start_time > 10:
+            
+            if time.time() - start_time > 30:
+                self.twist.angular.z = 0.0
+                #self.twist_pub.publish(self.twist)
                 break
-            move_angle = -1 * self.__tp_client.execute()
-            self.bc_node.rotate_angle(move_angle, precision=0, speed=0.4, time_out=3)
+            print("updating angle")
+
+            import subprocess
+            returnval = subprocess.run("ros2 service call /recp/track_person happymini_msgs/srv/TrackPerson command:\'\'", shell=True, executable="/bin/bash", capture_output=True, text=True).stdout
+            stdoutlines = returnval.split("\n")
+            angle = 0.0
+            for i in range(len(stdoutlines)):
+                if stdoutlines[i].find("angle=") != -1:
+                    angle = float(stdoutlines[i][stdoutlines[i].find("angle=")+6:stdoutlines[i].find(")")])
+                    print(angle)
+                    break
+
+
+            
+            #sysres = call(["ros2", "topic", "list"], shell=True, executable="/bin/bash")
+            move_angle = -1 * angle#-1 * tp_node.execute()
+            self.twist.angular.z = math.radians(move_angle)*0.5
+            if abs(move_angle) <= 5:
+                self.twist.angular.z = 0.0
+            if abs(self.twist.angular.z) > 0.7:
+                self.twist.angular.z = (self.twist.angular.z/abs(self.twist.angular.z))*0.6
+            self.twist_pub.publish(self.twist)
+            print(move_angle, self.twist.angular.z)
+            time.sleep(0.01)
+            cnt += 1
+            #self.bc_node.rotate_angle(move_angle, precision=0, speed=0.4, time_out=3)
         userdata.location_name_out = 'wait_position'
         if userdata.guest_num_in == 1:
             userdata.guest_num_out = userdata.guest_num_in + 1
@@ -428,7 +465,7 @@ class Receptionist(Node):
             # Add states
             smach.StateMachine.add(
                     'ENTER_ROOM', EnterRoom(self),
-                    transitions={'success':'NAVIGATION'})
+                    transitions={'success':'GUIDE_TO_SEAT'})#'NAVIGATION'})
             smach.StateMachine.add(
                     'NAVIGATION', Navigation(self),
                     transitions={'wait_position':'WAIT_GUEST',

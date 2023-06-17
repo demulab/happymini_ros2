@@ -21,13 +21,14 @@ class EmptySeatFinder(Node):
 
         self.bridge = CvBridge()
         chair_cb_group = MutuallyExclusiveCallbackGroup()
-        person_cb_group = None
+        person_cb_group = MutuallyExclusiveCallbackGroup()
+        image_group = ReentrantCallbackGroup()
         
         self.subscription = self.create_subscription(
             Image,
             'image_raw',
             self.image_callback,
-            qos_profile_sensor_data, callback_group=person_cb_group)
+            qos_profile_sensor_data, callback_group=image_group)
         self.service = self.create_service(
             DetectEmptyChair, 'recp/find_seat', self.detectEmptyChair, callback_group=chair_cb_group)
 
@@ -79,6 +80,14 @@ class EmptySeatFinder(Node):
             yaw = self.calculateYawAngle(people[i], img_w, 180)
             people_angles.append(yaw)
 
+
+        print("people detected in : {0}".format(people_angles))
+
+        if len(people_angles) == 0:
+            self.is_tracked = False
+            response.angle = self.angle
+            return response
+        
         if self.is_tracked is False:
             self.is_tracked = True
             maxarea = 0
