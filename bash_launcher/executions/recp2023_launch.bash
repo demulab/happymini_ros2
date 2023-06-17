@@ -6,7 +6,7 @@ cd $HOME/main_ws/src/happymini_ros2/bash_launcher/bashes
 
 gnome-terminal \
     $tab 'bash -c "sleep 1.0 ; ./bringup.bash;bash"'\
-    $tab 'bash -c "sleep 1.2 ; ./navigation2.bash;bash"'\
+    $tab 'bash -c "sleep 5.0 ; ./navigation2.bash;bash"'\
     $tab 'bash -c "sleep 1.4 ; ./name_detect.bash;bash"'\
     $tab 'bash -c "sleep 1.4 ; ./rs_launch.bash;bash"'\
     $tab 'bash -c "sleep 1.6 ; ./voice.bash;bash"'\

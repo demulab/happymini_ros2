@@ -238,7 +238,9 @@ class GetInfo(smach.State):
         else:
            self.get_logger().info('サービスが応答しませんでした。')
         # AttributeRecog
-        attribute_sentence = ar_node.execute(img_response.result, img_response.enviroment_image) 
+        print("Start attribute_recog")
+        attribute_sentence = ar_node.execute(img_response.result, img_response.environment_image) 
+        print(attribute_sentence)
         #print("Start AttributeRecognition")
         #self.__ar_req = AttributeRecognition.Request()
         #self.__ar_req.input = img_response.result
