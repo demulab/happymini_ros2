@@ -30,7 +30,7 @@ class JointController(Node):
     def inverse_kinematics(self, coordinate):
         x = coordinate[0]
         y = coordinate[1]
-        l0 = 0.49
+        l0 = 0.50
         l1 = 0.128
         l2 = 0.124
         l3 = 0.126
@@ -80,6 +80,7 @@ class JointController(Node):
 
     def manipulation(self, coordinate):
         self.joint_angle_list = self.inverse_kinematics(coordinate)
+        self.gripper(False)
         self.publish_joint(self.joint_angle_list, 2)
 
     def give(self):
@@ -87,7 +88,7 @@ class JointController(Node):
         self.publish_joint(self.joint_angle_list)
 
     def carry(self):
-        self.joint_angle_list = [90, -40, 40, 10, -90]
+        self.joint_angle_list = [90, -40, 40, 10, 55]
         self.publish_joint(self.joint_angle_list)
 
     def start_up(self):

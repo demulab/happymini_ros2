@@ -236,7 +236,7 @@ def main():
         #thread.start()
         time.sleep(0.1)
         #bc.translate_dist(-0.1, speed=0.1)
-        bc.odom_plot(15.999, 0, 0.1, 10)
+        bc.odom_plot(-15.999, 0, 0.1, 10)
     except KeyboardInterrupt:
         pass
     #thread.join()

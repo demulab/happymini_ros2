@@ -21,6 +21,7 @@ class BagLocalizationServer(Node):
                 parameters=[
                     ('LRF_TYPE', Parameter.Type.STRING),
                     ('up_down', Parameter.Type.STRING),
+                    ('estimation.scan_range', Parameter.Type.INTEGER),
                     ('estimation.dispersion', Parameter.Type.DOUBLE)])
         # get Params
         self.lrf_type = self.get_parameter('LRF_TYPE').value
