@@ -102,8 +102,8 @@ class EnterRoom(smach.State):
         self.logger = node.get_logger()
 
     def execute(self, userdata):
-        #_ = self.node.tts("Start Receptionist")
-        synthesis2('Start Receptionist')
+        _ = self.node.tts("Start Receptionist")
+        #synthesis2('Start Receptionist')
         return 'success'
 
 
@@ -162,6 +162,7 @@ class WaitGuest(smach.State):
     def execute(self, userdata):
         self.num_persoon += 1
         userdata.guest_num_out = self.num_persoon
+        self.node.tts('Please come to front of me.')
         time.sleep(1.0)
         return 'success'
 
@@ -229,8 +230,8 @@ class GetInfo(smach.State):
     def execute(self, userdata):
         name_flg = False
         while not name_flg:
-            synthesis2('What is your name?')
-            #_ = self.node.tts('What is your name?')
+            #synthesis2('What is your name?')
+            _ = self.node.tts('What is your name?')
             # Name detect
             name = self.stt_send_request()
             name = name.replace(" ","").replace(".","")
@@ -240,10 +241,11 @@ class GetInfo(smach.State):
                 drink = self.drinks[name_d]
                 name_flg = True
             except KeyError:
-                #_ = self.node.tts('Sorry. I did not catch that. Plrease try again.')
-                synthesis2('Sorry. I did not catch that. Plrease try again.')
+                _ = self.node.tts('Sorry. I did not catch that. Plrease try again.')
+                #synthesis2('Sorry. I did not catch that. Plrease try again.')
                 continue
             print(drink)
+        _ = self.node.tts('Hi, ' + name_d)
         # PersonDetector
         self.__pd_req = DetectPerson.Request()
         self.pd_future = self.__pd_client.call_async(self.__pd_req)
@@ -287,7 +289,7 @@ class GetInfo(smach.State):
         #print(userdata.name_out)
         #print(userdata.drink_out)
         #print(userdata.feature_out)
-        time.sleep(1.0)
+        _ = self.node.tts('Please follow me.')
         userdata.location_name_out = 'party_room'
         #print(f'{userdata.gust_num_in}')
         return 'success'
@@ -321,11 +323,14 @@ class SayInfo(smach.State):
         self.logger = node.get_logger()
 
     def execute(self, userdata):
-        synthesis2('Name is ' + userdata.name_in)
+        _ = self.node.tts('Name is ' + userdata.name_in)
+        #synthesis2('Name is ' + userdata.name_in)
         time.sleep(1.0)
-        synthesis2('Drink is ' + userdata.drink_in)
+        _ = self.node.tts(userdata.name_in + "'s favorite drink is " + userdata.drink_in)
+        #synthesis2('Drink is ' + userdata.drink_in)
         time.sleep(1.0)
-        synthesis2(userdata.feature_in)
+        _ = self.node.tts(userdata.feature_in)
+        #synthesis2(userdata.feature_in)
         return 'success'
 
 
@@ -351,23 +356,24 @@ class GuideToSeat(smach.State):
         self.twist = Twist()
 
     def execute(self, userdata):
-        #self.__req = DetectEmptyChair.Request()
-        #self.__req.command = ""
-        #self.future = self.__client.call_async(self.__req)
-        #rclpy.spin_until_future_complete(self.node, self.future)
-        #while not self.future.done() and rclpy.ok():
-        #    rclpy.spin_once(self.node, timeout_sec=0.1)
-        #if self.future.result() is not None:
-        #    result = self.future.result()
-        #else:
-        #    self.get_logger().info('サービスが応答しませんでした。')
-        ## 向く
-        #self.bc_node.rotate_angle(-1*result.angles[0])
-        ## しゃべる
+        self.__req = DetectEmptyChair.Request()
+        self.__req.command = ""
+        self.future = self.__client.call_async(self.__req)
+        rclpy.spin_until_future_complete(self.node, self.future)
+        while not self.future.done() and rclpy.ok():
+            rclpy.spin_once(self.node, timeout_sec=0.1)
+        if self.future.result() is not None:
+            result = self.future.result()
+        else:
+            self.get_logger().info('サービスが応答しませんでした。')
+        # 向く
+        self.bc_node.rotate_angle(-1*result.angles[0])
+        # しゃべる
+        _ = self.node.tts('Please sit in the chair in the direction I am facing.')
         #synthesis2('Please sit in the chair in the direction I am facing.')
-        ## tracking
-        #self.bc_node.rotate_angle(180, precision=0, speed=0.5, time_out=10)
-        #time.sleep(1.0)
+        # tracking
+        self.bc_node.rotate_angle(180, precision=0, speed=0.5, time_out=10)
+        time.sleep(1.0)
         start_time = time.time()
 
         move_angle = 0
@@ -375,9 +381,9 @@ class GuideToSeat(smach.State):
         
         while rclpy.ok():
             
-            if time.time() - start_time > 30:
+            if time.time() - start_time > 20:
                 self.twist.angular.z = 0.0
-                #self.twist_pub.publish(self.twist)
+                self.twist_pub.publish(self.twist)
                 break
             print("updating angle")
 
@@ -390,9 +396,6 @@ class GuideToSeat(smach.State):
                     angle = float(stdoutlines[i][stdoutlines[i].find("angle=")+6:stdoutlines[i].find(")")])
                     print(angle)
                     break
-
-
-            
             #sysres = call(["ros2", "topic", "list"], shell=True, executable="/bin/bash")
             move_angle = -1 * angle#-1 * tp_node.execute()
             self.twist.angular.z = math.radians(move_angle)*0.5
@@ -425,7 +428,7 @@ class SayFinish(smach.State):
         self.logger = node.get_logger()
 
     def execute(self, userdata):
-        time.sleep(1.0)
+        _ = self.node.tts('Finish Receptionist. Thank you very much.')
         return 'success'
 
 
@@ -437,19 +440,19 @@ class Receptionist(Node):
             self.get_logger().info("/mimic3_play_server is not here ...")
         self.tts_req = TextToSpeech.Request()
 
-    #def tts(self, text):
-    #    # Msg
-    #    self.tts_req.text = text
-    #    # Call
-    #    future = self.tts_srv.call_async(self.tts_req)
-    #    while not future.done() and rclpy.ok():
-    #        rclpy.spin_once(self, timeout_sec=0.1)
-    #    if future.result() is not None:
-    #        result = future.result().result
-    #        return result
-    #    else:
-    #        self.get_logger().info("Service call failed")
-    #        return False
+    def tts(self, text):
+        # Msg
+        self.tts_req.text = text
+        # Call
+        future = self.tts_srv.call_async(self.tts_req)
+        while not future.done() and rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.1)
+        if future.result() is not None:
+            result = future.result().result
+            return result
+        else:
+            self.get_logger().info("Service call failed")
+            return False
 
     def execute(self):
         # Create a SMACH state machine
@@ -465,7 +468,7 @@ class Receptionist(Node):
             # Add states
             smach.StateMachine.add(
                     'ENTER_ROOM', EnterRoom(self),
-                    transitions={'success':'GUIDE_TO_SEAT'})#'NAVIGATION'})
+                    transitions={'success':'NAVIGATION'})
             smach.StateMachine.add(
                     'NAVIGATION', Navigation(self),
                     transitions={'wait_position':'WAIT_GUEST',
@@ -501,8 +504,8 @@ class Receptionist(Node):
                     transitions={'success':'end'})
         
         # Viewer
-        sis = smach_ros.IntrospectionServer('receptionist', sm_top, '/SM_ROOT')
-        sis.start()
+        #sis = smach_ros.IntrospectionServer('receptionist', sm_top, '/SM_ROOT')
+        #sis.start()
 
         # Execute
         outcome = sm_top.execute()

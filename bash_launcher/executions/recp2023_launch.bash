@@ -10,8 +10,8 @@ gnome-terminal \
     $tab 'bash -c "sleep 1.4 ; ./name_detect.bash;bash"'\
     $tab 'bash -c "sleep 1.4 ; ./rs_launch.bash;bash"'\
     $tab 'bash -c "sleep 1.6 ; ./voice.bash;bash"'\
-    $tab 'bash -c "sleep 1.5 ; ./v4l2_camera_node.bash;bash"'\ 
+    $tab 'bash -c "sleep 1.5 ; ./v4l2_camera_node.bash;bash"'\
     $tab 'bash -c "sleep 1.5 ; ./object_detection_tf.bash;bash"'\
-    $tab 'bash -c "sleep 1.5 ; ./person_detector.bash;bash"'\
-    $tab 'bash -c "sleep 1.5 ; ./empty_seat_finder.bash;bash"'\
-    $tab 'bash -c "sleep 1.5 ; ./attribute_recog_node.bash;bash"'\
+    $tab 'bash -c "sleep 3.0 ; ./person_detector.bash;bash"'\
+    $tab 'bash -c "sleep 3.0 ; ./empty_seat_finder.bash;bash"'\
+    $tab 'bash -c "sleep 3.0 ; ./attribute_recog_node.bash;bash"'\
