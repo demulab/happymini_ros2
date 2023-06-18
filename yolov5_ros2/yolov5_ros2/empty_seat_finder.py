@@ -99,8 +99,11 @@ class EmptySeatFinder(Node):
                 if area > maxarea:
                     max_idx = i
                     maxarea = area
-            response.angle = people_angles[max_idx]
-                
+            if len(people) > 0:
+                response.angle = people_angles[max_idx]
+            else:
+                self.is_tracked = False
+                response.angle = self.angle
         else:
             min_diff = 360
             min_idx = 0
@@ -110,8 +113,11 @@ class EmptySeatFinder(Node):
                 if diff < min_diff:
                     min_idx = i
                     min_diff = diff
-
-            response.angle = people_angles[min_idx]
+            if len(people) > 0:
+                response.angle = people_angles[min_idx]
+            else:
+                self.is_tracked = False
+                response.angle = self.angle
         self.angle = response.angle
         return response
 
