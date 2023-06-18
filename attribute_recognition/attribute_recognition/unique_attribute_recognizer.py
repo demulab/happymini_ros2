@@ -95,7 +95,11 @@ class UniqueAttributeRecognizer:
 
         age_sentence = "{0} looks {1}.".format(pron, age_description)
 
-        return "{0} {1} {2}".format(description, gender_sentence, age_sentence)
+        race_sentence = ""
+        if demographics["face_found"]:
+            race_sentence = "{0} is {1}".format(pron, demographics["dominant_race"])
+        
+        return "{0} {1} {2} {3}".format(description, gender_sentence, age_sentence, race_sentence)
 
 
 
