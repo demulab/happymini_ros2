@@ -104,7 +104,7 @@ class GraspBagServer(Node):
         # 2段階目
         feedback_msg.state = "Re: Estimating bag location ..."
         goal_handle.publish_feedback(feedback_msg)
-        bag_info = self.blc_node.request_send('all', 120)
+        bag_info = self.blc_node.request_send('all', 120, graph=True)
         self.get_logger().info(f"Bag info >>> {bag_info}")
         self.bc_node.rotate_angle(bag_info['angle_to_bag'], precision=0, speed=0.2, time_out=10)
         #self.bc_node.translate_dist((bag_info['distance_to_bag'] - 0.1)/2, 0.05)
