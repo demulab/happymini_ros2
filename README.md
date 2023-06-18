@@ -117,3 +117,12 @@ ros2 run rcj_2023_master find_my_mates_2023
 ros2 run rcfrance_2023_master carry_my_luggage_france2023
 ```
 >>>>>>> kanazawa-devel
+
+**マイクの設定**
+![Screenshot from 2023-06-18 18-03-12](https://github.com/demulab/happymini_ros2/assets/121123734/d13841d3-dc5b-4f20-9a65-98fabf300b51)
+
+**魚眼カメラ**
+USBを挿す
+
+![image_167837697](https://github.com/demulab/happymini_ros2/assets/121123734/febeb32c-a84b-470f-bb9f-b49f37a2fb64)
+
