@@ -35,4 +35,4 @@ def generate_launch_description():
         #    executable='navi_location',
         #    arguments=[yaml_path],
         #    output='screen'),
-        #])
+        ])
