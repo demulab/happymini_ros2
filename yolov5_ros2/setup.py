@@ -31,6 +31,7 @@ setup(
             "dump_detection = yolov5_ros2.dump_detection_results:main",
             "dump_fisheye = yolov5_ros2.dump_fisheye:main",
             'object_detection_tf = yolov5_ros2.object_detection_tf:main',
+            'object_detection_tf_origin = yolov5_ros2.object_detection_tf_origin:main',
             'object_detection_srv = yolov5_ros2.object_detection_srv:main',
             'empty_seat_finder = yolov5_ros2.empty_seat_finder:main',
             'person_detector = yolov5_ros2.person_detector:main',
