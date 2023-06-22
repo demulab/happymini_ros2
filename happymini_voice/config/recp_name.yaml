@@ -1,0 +1,8 @@
+name_detect:
+  ros__parameters:
+    name : ["amelia", "charlie", "hunter", "max"]
+    drinks :
+      amelia : "coffee"
+      charlie : "wine"
+      hunter: "beer"
+      max: "jintonic"

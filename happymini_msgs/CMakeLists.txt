@@ -8,6 +8,7 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
+find_package(sensor_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
     "srv/BagLocalization.srv"
@@ -15,9 +16,17 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     "srv/NaviLocation.srv"
     "srv/TextToSpeech.srv"
     "srv/SpeechToText.srv"
+    "srv/NameDetect.srv"
+    "srv/StringCommand.srv"
+    "srv/AttributeRecognition.srv"
+    "srv/DetectPerson.srv"
+    "srv/DetectEmptyChair.srv"
     "srv/WavPlay.srv"
     "srv/WavMake.srv"
+    "srv/TrackPerson.srv"
     "action/GraspBag.action"
+    "msg/DetectionResult.msg"
+    DEPENDENCIES sensor_msgs
     )
 
 ament_export_dependencies(rosidl_default_runtime)

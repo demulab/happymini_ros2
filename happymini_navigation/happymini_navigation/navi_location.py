@@ -34,34 +34,37 @@ class WayPointNavi(Node):
         self.location_name = None
         self.location_dict = {}
         self.param_namespace = 'location_params'
-        # Set params
         self.set_params()
 
     def set_params(self):
         # Open yaml
         with open(self.yaml_path) as f:
             self.location_dict = yaml.safe_load(f)
+        self.get_logger().info(f"'{self.location_dict}' already set")
         # Set param
-        location_params = [[key, value] for key, value in self.location_dict.items()]
-        self.declare_parameters(self.param_namespace, location_params)
-        # Check param
-        for key in self.location_dict.keys():
-            param_name = self.param_namespace + '.' + key
-            if self.has_parameter(param_name):
-                self.get_logger().info(f"'{param_name}' already set")
-            else:
-                self.get_logger().error(f"Could not set '{param_name}'")
-                break 
+        #location_params = [[key, value] for key, value in self.location_dict.items()]
+        #self.declare_parameters(self.param_namespace, location_params)
+        ## Check param
+        #print(self.location_dict)
+        #for key in self.location_dict.keys():
+        #    param_name = self.param_namespace + '.' + key
+        #    if self.has_parameter(param_name):
+        #        self.get_logger().info(f"'{param_name}' already set")
+        #    else:
+        #        self.get_logger().error(f"Could not set '{param_name}'")
+        #        break 
 
     def search_location_param(self, location_name):
-        param_name = self.param_namespace + '.' + location_name
-        if self.has_parameter(param_name):
-            location_coordinate = self.get_parameter(param_name).value
-            self.get_logger().info(f"{location_name}: {location_coordinate}")
-            return location_coordinate
-        else:
-            self.get_logger().error(f"'{location_name}' doesn't exist.'")
-            return None
+        #param_name = self.param_namespace + '.' + location_name
+        #param_name = self.location_dict[location_name]
+        #if self.has_parameter(param_name):
+        #location_coordinate = self.get_parameter(param_name).value
+        location_coordinate = self.location_dict[location_name]
+        self.get_logger().info(f"{location_name}: {location_coordinate}")
+        return location_coordinate
+        #else:
+        #    self.get_logger().error(f"'{location_name}' doesn't exist.'")
+        #    return None
 
     def set_pose(self, goal_pose):
         pose = PoseStamped()
@@ -143,5 +146,5 @@ def main(args=None):
         rclpy.spin(navi_location_server)
     except KeyboardInterrupt:
         pass
-    waypoint_navi.destroy_node()
+    #navi_location_server.destroy_node()
     rclpy.shutdown()

@@ -1,0 +1,4 @@
+string command
+---
+sensor_msgs/Image result
+sensor_msgs/Image environment_image

@@ -3,7 +3,7 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 from rclpy.node import Node
-from std_msgs.msg import Float32MultiArray, String
+from std_msgs.msg import Float32MultiArray #String
 
 import time
 import tf_transformations   
@@ -12,20 +12,20 @@ from geometry_msgs.msg import Twist  # Twistメッセージ型をインポート
 from nav_msgs.msg import Odometry    # Odometryメッセージ型をインポート
 from tf_transformations import euler_from_quaternion 
 from happymini_teleop.base_control import BaseControl
-
+from happymini_msgs.srv import TextToSpeech
 
 class Sekkin(Node):
     def __init__(self):
         super().__init__('approach_person')
         self.sub = self.create_subscription(Float32MultiArray, 'topic', self.Callback, 10)
-        self.pub = self.create_publisher(Twist, 'cmd_vel', 10)
+        #self.pub = self.create_publisher(Twist, 'cmd_vel', 10)
+        self.srv = self.create_service(TextToSpeech, 'app', self.happymove)
         self.odm_sub = self.create_subscription(Odometry, 'odom', self.odom_cb, 10)
-        self.master_sub = self.create_subscription(String, 'master', self.mas, 10)
-        self.timer = self.create_timer(0.01, self.timer_callback)
+        #self.master_sub = self.create_subscription(String, 'master', self.mas, 10)
         self.x, self.y, self.yaw = 0.0, 0.0, 0.0
         self.x0, self.y0, self.yaw0 = 0.0, 0.0, 0.0
         self.vel = Twist()  # Twist メッセージ型インスタンスの生成
-        self.set_vel(0.0, 0.0)  # 速度の初期化
+        #self.set_vel(0.0, 0.0)  # 速度の初期化
         self.bc_node = BaseControl()
 
 
@@ -37,8 +37,8 @@ class Sekkin(Node):
 
         self.master = 0
 
-    def mas(self, msg):
-        self.master = msg.data
+    #def mas(self, srv_req, srv_res):
+    #    self.master = srv_req.text
 
     def Callback(self, msg):
         #self.get_logger().info(f'sub:{msg.data}')
@@ -78,17 +78,17 @@ class Sekkin(Node):
         #self.get_logger().info(
         #    f'x={self.x: .2f} y={self.y: .2f}[m] yaw={self.yaw: .2f}[rad]')
 
-    def set_vel(self, linear, angular):  # 速度を設定する
-        self.vel.linear.x = linear   # [m/s]
-        self.vel.angular.z = angular  # [rad/s]    
+    #def set_vel(self, linear, angular):  # 速度を設定する
+    #    self.vel.linear.x = linear   # [m/s]
+    #    self.vel.angular.z = angular  # [rad/s]    
 
     def set_disan(self):
-        self.check()
+        #self.check()
         self.dis = (self.zz / 2) - 0.3
         self.ang = - (math.atan2(self.xx, self.zz))*180 / math.pi
 
-    def timer_callback(self):  # タイマーのコールバック関数
-        self.pub.publish(self.vel)  # 速度指令メッセージのパブリッシュ 
+    #def timer_callback(self):  # タイマーのコールバック関数
+    #    self.pub.publish(self.vel)  # 速度指令メッセージのパブリッシュ 
         
     def happy_move(self, distance, angle):# 簡単な状態遷移
         state = 0
@@ -109,28 +109,37 @@ class Sekkin(Node):
                 break  
             else:
                 print('エラー状態')
-            rclpy.spin_once(self)
+            #rclpy.spin_once(self)
 
-    def happymove(self):
-        rclpy.spin_once(self)
+    def happymove(self, srv_req, srv_res):
+        self.master = srv_req.text
+        self.get_logger().info(f"{self.master}")
         while rclpy.ok():
             if self.master == 'start':    
                 self.set_disan()
-                self.happy_move(self.dis, self.ang)
+                #self.happy_move(self.dis, self.ang)
+                self.bc_node.rotate_angle(self.ang)
+                self.bc_node.translate_dist(self.dis)
+                time.sleep(1.5)
                 self.bc_node.translate_dist(-0.2, 0.1)
                 self.set_disan()
-                self.happy_move(0, self.ang)
+                #self.happy_move(0, self.ang)
+                self.bc_node.rotate_angle(self.ang)
                 self.get_logger().info(f'end')
+                break
             rclpy.spin_once(self)
+        srv_res.result = True
+        return srv_res
 
 def main(args = None):
     print('start')
     rclpy.init()
     node = Sekkin()
     try:
-        print('waite')
-        node.happymove()
-        print('unti')
+        rclpy.spin(node)
+        #print('waite')
+        #node.happymove()
+        #print('unti')
         
         print('owari')
         #node.happy_move()
