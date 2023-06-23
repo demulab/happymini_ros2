@@ -5,14 +5,15 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image, CameraInfo
-from geometry_msgs.msg import TransformStamped, Point, PoseArray
-from std_msgs.msg import ByteMultiArray
+from geometry_msgs.msg import TransformStamped, Point
 from cv_bridge import CvBridge, CvBridgeError
 from rclpy.utilities import remove_ros_args
 from message_filters import Subscriber, ApproximateTimeSynchronizer
 from tf2_ros import TransformBroadcaster
 
 from yolov5_ros2.detector import Detector, parse_opt
+
+from happymini_msgs.msg import PointArray
 
 
 class ObjectDetection(Node):
@@ -40,9 +41,9 @@ class ObjectDetection(Node):
         self.ts.registerCallback(self.images_callback)
         self.broadcaster = TransformBroadcaster(self)
         # by kanazawa
-        self.coord_pub = self.create_publisher(ByteMultiArray, 'person_coordinates', 10)
+        self.coord_pub = self.create_publisher(PointArray, 'person_coordinates', 10)
         self.person_coord = Point()
-        self.coordinates = ByteMultiArray()
+        self.coordinates = PointArray()
 
     def generation_coord(self, msg_info, data):
         u1 = round(data.u1)
@@ -87,14 +88,13 @@ class ObjectDetection(Node):
                 break
             elif r.name == self.target_name:
                 person_list.append(r)
-
-        if person_list:
-            self.coordinates.data.clear()
+        
+        self.coordinates.points.clear()
+        if person_list:  
             for data in person_list:
                 self.generation_coord(msg_info, data)
-                self.coordinates.data.append(self.person_coord)
-        print(self.coordinates)
-        #self.coord_pub.publish(self.coordinates)
+                self.coordinates.points.append(self.person_coord)
+        self.coord_pub.publish(self.coordinates)
 
         self.img_depth *= 16
         if target is not None:

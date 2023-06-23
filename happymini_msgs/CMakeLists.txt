@@ -26,6 +26,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     "srv/TrackPerson.srv"
     "action/GraspBag.action"
     "msg/DetectionResult.msg"
+    "msg/PointArray.msg"
     DEPENDENCIES sensor_msgs
     )
 

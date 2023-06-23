@@ -76,9 +76,9 @@ class HandPosePublish(Node):
               hand_right = results.pose_landmarks.landmark[16]
               
   
-              if (shoulder_right.x - hand_right.x) > 0.1:
+              if (shoulder_right.x - hand_right.x) > 0.05:
                 way = 'left'
-              elif (hand_left.x - shoulder_left.x) > 0.1:
+              elif (hand_left.x - shoulder_left.x) > 0.05:
                 way = 'right'
               else:
                 way = 'None pose'
