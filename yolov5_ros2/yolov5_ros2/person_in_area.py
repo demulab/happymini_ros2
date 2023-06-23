@@ -27,7 +27,7 @@ from rclpy.qos import qos_profile_sensor_data
 from rclpy.qos import QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
 from rclpy.qos import QoSProfile
 
-from happymini_msgs.srv import PersonMulti
+from happymini_msgs.srv import PersonMulti, PersonInArea
 
 
 class PersonClient(Node):
@@ -69,54 +69,109 @@ class PersonArea(Node):
             self.map_callback,
             amcl_pose_qos)
 
+        self.srv_personinmap = self.create_service(PersonInArea, 'srv_personinarea', self.get_person_map_pose)
+
     def map_callback(self, data : OccupancyGrid):
-        self.map = data.data
         self.mapinfo = data.info
+        self.map = np.asarray([data.data]).reshape((self.mapinfo.height, self.mapinfo.width))
+        
+        print(self.map.shape)
+        cv2.imwrite('/home/demulab/test_data/map.png', self.map)
         #print(self.map)
         #print(self.mapinfo)
 
-    def get_robot_map_pose(self, transform):
-        x = transform.transform.translation.x
-        y = transform.transform.translation.y
+    #def get_robot_map_pose(self, transform):
+    #    x = transform.transform.translation.x
+    #    y = transform.transform.translation.y
+
+    #    map_x = self.mapinfo.origin.position.x
+    #    map_y = self.mapinfo.origin.position.y
+
+    #    robox = int((x - map_x) / self.mapinfo.resolution)
+    #    roboy = int((y - map_y) / self.mapinfo.resolution)
+
+    #    print('robo x', robox)
+    #    print('robo y', roboy)
+    #    return pxx, pxy 
+
+    def set_person_multi(self):
+        self.personmulti = self.personclient.send_request()
+        
+    def set_personmulti_client(self, client):
+        self.personclient = client
+
+    def set_transform(self):
+            try:
+                self.t = self.tf_buffer.lookup_transform(
+                        "base_link",
+                        "map",
+                        rclpy.time.Time())
+            except TransformException as e:
+                print("no tf found")
+ 
+
+    def get_person_map_pose(self, req, res): #, robotx, roboty):
+        self.set_person_multi()
+        euler = euler_from_quaternion((self.t.transform.rotation.x, self.t.transform.rotation.y, self.t.transform.rotation.z, self.t.transform.rotation.w))        
+        x = self.t.transform.translation.x
+        y = self.t.transform.translation.y
 
         map_x = self.mapinfo.origin.position.x
         map_y = self.mapinfo.origin.position.y
 
-        pxx = int((x - map_x) / self.mapinfo.resolution)
-        pxy = int((y - map_y) / self.mapinfo.resolution)
+        robotx = int((x - map_x) / self.mapinfo.resolution)
+        roboty = int((y - map_y) / self.mapinfo.resolution)
 
-        #print(pxx)
-        #print(pxy)
-        return pxx, pxy 
+        print('robo x', robotx)
+        print('robo y', roboty)
 
-    def get_person_map_pose(self, personmulti, t, robotx, roboty):
-        euler = euler_from_quaternion((t.transform.rotation.x, t.transform.rotation.y, t.transform.rotation.z, t.transform.rotation.w))
         #print('r :', math.degrees(euler[0]))
         #print('p :', math.degrees(euler[1]))
         print('y :', math.degrees(euler[2]))
-        for i in range(len(personmulti.poses)):
-            angle = math.atan2(personmulti.poses[i].z, personmulti.poses[i].x) - math.pi/2
-            dist = math.sqrt(personmulti.poses[i].x**2 + personmulti.poses[i].z**2)
+        min_dist = 10000
+        min_idx = 0
+        for i in range(len(self.personmulti.poses)):
+            angle = math.atan2(self.personmulti.poses[i].z, self.personmulti.poses[i].x) - math.pi/2
+            dist = math.sqrt(self.personmulti.poses[i].x**2 + self.personmulti.poses[i].z**2)
             print('people :', math.degrees(angle))
             print('peoplemap :', math.degrees(euler[2] - angle))
-            people_x = dist * math.cos(angle) 
-            people_y = dist * math.sin(angle)
-
+            people_x = -dist * math.cos(euler[2]-angle) 
+            people_y = dist * math.sin(euler[2]-angle)
+            print('peplex :', people_x)
+            print('peopley :', people_y)
+            print('dest :', dist)
             map_x = self.mapinfo.origin.position.x
             map_y = self.mapinfo.origin.position.y
-        
+            print(self.mapinfo.origin.position)
             pxx = robotx + int((people_x - map_x) / self.mapinfo.resolution)
             pxy = roboty + int((people_y - map_y) / self.mapinfo.resolution)
+            cv2.circle(self.map, (pxy, pxx), 10, 255, -1)
+            cv2.imwrite('/home/demulab/test_data/map2.png', self.map)
             print('pxx :', pxx)
             print('pxy :', pxy)
+            people_map_x = x + int((people_x - map_x))
+            people_map_y = y + int((people_y - map_y))
 
-            if pxx > self.mapinfo.width*0.9 or pxy > self.mapinfo.height*0.9 :
+            if pxx > self.mapinfo.width*0.9 or pxy > self.mapinfo.height*0.98 :
                 print('people out')
-            elif pxx < self.mapinfo.width*0.1 or pxy < self.mapinfo.height*0.1:
+            elif pxx < self.mapinfo.width*-0.02 or pxy < self.mapinfo.height*0.15:
                 print('people out')
             else: 
-                print('people in')
-
+                if min_dist > dist:
+                    min_dist = dist
+                    min_idx = i
+        if len(self.personmulti.poses) > 0 :
+            print(self.personmulti.poses[min_idx])
+            img = CvBridge().imgmsg_to_cv2(self.personmulti.images[min_idx])
+            cv2.imwrite('/home/demulab/test_data/people.png', img)
+            res.result = True
+            res.pose = self.personmulti.poses[min_idx]
+            res.map_pose.x = people_map_x
+            res.map_pose.y = people_map_y
+            return res
+        else :
+            res.result = False
+            return res
 
 
 
@@ -124,19 +179,10 @@ def main():
     rclpy.init()
     node = PersonArea()
     srv = PersonClient()
+    node.set_personmulti_client(srv)
     try:
         while True:
-            try:
-                t = node.tf_buffer.lookup_transform(
-                        "base_link",
-                        "map",
-                        rclpy.time.Time())
-                #print(t)
-                robotx,roboty = node.get_robot_map_pose(t)
-                personmulti = srv.send_request()
-                node.get_person_map_pose(personmulti, t, robotx, roboty)
-            except TransformException as e:
-                print("no tf found")
+            node.set_transform()
             rclpy.spin_once(node)
     except KeyboardInterrupt:
         pass

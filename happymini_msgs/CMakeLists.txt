@@ -20,9 +20,11 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     "srv/StringCommand.srv"
     "srv/AttributeRecognition.srv"
     "srv/DetectPerson.srv"
+    "srv/PersonMulti.srv"
+    "srv/PersonInArea.srv"
     "action/GraspBag.action"
     "msg/DetectionResult.msg"
-    DEPENDENCIES sensor_msgs
+    DEPENDENCIES sensor_msgs geometry_msgs
     )
 
 ament_export_dependencies(rosidl_default_runtime)
