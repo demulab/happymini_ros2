@@ -88,9 +88,9 @@ class ObjectDetection(Node):
                 break
             elif r.name == self.target_name:
                 person_list.append(r)
-        
+
         self.coordinates.points.clear()
-        if person_list:  
+        if person_list:
             for data in person_list:
                 self.generation_coord(msg_info, data)
                 self.coordinates.points.append(self.person_coord)
