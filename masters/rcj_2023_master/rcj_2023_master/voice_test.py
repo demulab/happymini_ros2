@@ -8,7 +8,7 @@ class TestClient(Node):
         self.stt_srv = self.create_client(SpeechToText, 'stt')
         self.nd_srv = self.create_client(NameDetect, 'nd')
         self.tts_srv = self.create_client(TextToSpeech, 'tts')
-        self.pia_srv = self.create_client(PersonInArea, 'srv_personinarea')
+        #self.pia_srv = self.create_client(PersonInArea, 'srv_personinarea')
         while not self.stt_srv.wait_for_service(timeout_sec=1.0) and self.nd_srv.wait_for_service(timeout_sec=1.0) and self.nd_srv.wait_for_service(timeout_sec=1.0) and self.nd_srv.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("Message is not here ...")
         self.stt_srv_req = SpeechToText.Request()
@@ -60,20 +60,20 @@ class TestClient(Node):
 #            self.get_logger().info(f"Service call failed")
 #            return None
 
-    def pia_send_request(self, cmd='start'):
-        pia_srv_result = 'None'
-        self.pia_srv_req.cmd = cmd
-
-        pia_srv_future = self.pia_srv.call_async(self.pia_srv_req)
-        while not pia_srv_future.done() and rclpy.ok():
-            rclpy.spin_once(self, timeout_sec=0.1)
-        if pia_srv_future.result() is not None:
-            pia_srv_result = pia_srv_future.result().result
-            print(pia_srv_result)
-            return pia_srv_result
-        else:
-            self.get_logger().info(f"Service call failed")
-            return None
+#    def pia_send_request(self, cmd='start'):
+#        pia_srv_result = 'None'
+#        self.pia_srv_req.cmd = cmd
+#
+#        pia_srv_future = self.pia_srv.call_async(self.pia_srv_req)
+#        while not pia_srv_future.done() and rclpy.ok():
+#            rclpy.spin_once(self, timeout_sec=0.1)
+#        if pia_srv_future.result() is not None:
+#            pia_srv_result = pia_srv_future.result().result
+#            print(pia_srv_result)
+#            return pia_srv_result
+#        else:
+#            self.get_logger().info(f"Service call failed")
+#            return None
 
 
 
@@ -85,7 +85,7 @@ def main():
         #stt = tc.stt_send_request()
         #nd = tc.nd_send_request(stt)
         #tc.tts_send_request(nd)
-        tc.pia_send_request()
+        #tc.pia_send_request()
         rclpy.spin_once(tc)
     except KeyboardInterrupt:
         pass

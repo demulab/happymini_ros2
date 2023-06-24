@@ -3,7 +3,7 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 from rclpy.node import Node
-from std_msgs.msg import Float32MultiArray #String
+#from std_msgs.msg import Float32MultiArray #String
 
 import time
 import tf_transformations   
@@ -12,13 +12,41 @@ from geometry_msgs.msg import Twist  # Twistメッセージ型をインポート
 from nav_msgs.msg import Odometry    # Odometryメッセージ型をインポート
 from tf_transformations import euler_from_quaternion 
 from happymini_teleop.base_control import BaseControl
-from happymini_msgs.srv import TextToSpeech
+from happymini_msgs.srv import TextToSpeech, PersonInArea
+
+class SekkinClient(Node):
+    def __init__(self):
+        super().__init__('sekkin_client')
+        self.pia_srv = self.create_client(PersonInArea, 'srv_personinarea')
+        while not self.pia_srv.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info("Message is not here ...")
+        self.pia_srv_req = PersonInArea.Request()
+
+    def pia_send_request(self, text = ''):
+        pia_srv_result = 'None'
+        self.pia_srv_req.text = text       
+ 
+        pia_srv_future = self.pia_srv.call_async(self.pia_srv_req)
+        while not pia_srv_future.done() and rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.1)
+        if pia_srv_future.result() is not None:
+            pia_srv_result = pia_srv_future.result()
+            print(pia_srv_result)
+            return pia_srv_result
+        else:
+            self.get_logger().info(f"Service call failed")
+            return None
+
+
+
+
 
 class Sekkin(Node):
     def __init__(self):
         super().__init__('approach_person')
-        self.sub = self.create_subscription(Float32MultiArray, 'topic', self.Callback, 10)
+        #self.sub = self.create_subscription(Float32MultiArray, 'topic', self.Callback, 10)
         #self.pub = self.create_publisher(Twist, 'cmd_vel', 10)
+
         self.srv = self.create_service(TextToSpeech, 'app', self.happymove)
         self.odm_sub = self.create_subscription(Odometry, 'odom', self.odom_cb, 10)
         #self.master_sub = self.create_subscription(String, 'master', self.mas, 10)
@@ -40,19 +68,26 @@ class Sekkin(Node):
     #def mas(self, srv_req, srv_res):
     #    self.master = srv_req.text
 
-    def Callback(self, msg):
-        #self.get_logger().info(f'sub:{msg.data}')
-        self.xx = msg.data[0]
-        self.zz = msg.data[2]
-        #self.dig = - (math.atan2(self.xx, self.zz))*180 / math.pi
-        #self.get_logger().info(f'{self.dig}')
-        plt.plot(self.xx, self.zz, '.')
-        plt.xlim(-1, 1)
-        plt.ylim(0, 3)
-        plt.pause(0.1)
-        #self.happy_move(self.zz, self.dig)
-        #time.sleep(5)
-        plt.clf()
+    #def Callback(self, msg):
+    #    #self.get_logger().info(f'sub:{msg.data}')
+    #    self.xx = msg.data[0]
+    #    self.zz = msg.data[2]
+    #    #self.dig = - (math.atan2(self.xx, self.zz))*180 / math.pi
+    #    #self.get_logger().info(f'{self.dig}')
+    #    plt.plot(self.xx, self.zz, '.')
+    #    plt.xlim(-1, 1)
+    #    plt.ylim(0, 3)
+    #    plt.pause(0.1)
+    #    #self.happy_move(self.zz, self.dig)
+    #    #time.sleep(5)
+    #    plt.clf()
+
+    def set_sekkin_xy(self):
+        self.sekkin_xy = self.sekkinclient.pia_send_request()
+
+
+    def set_sekkin_client(self, client):
+        self.sekkinclient = client
 
     def check(self):
         self.xx = None
@@ -85,7 +120,8 @@ class Sekkin(Node):
     def set_disan(self):
         #self.check()
         self.dis = (self.zz / 2) - 0.3
-        self.ang = - (math.atan2(self.xx, self.zz))*180 / math.pi
+        print(f"angle : {math.degrees(math.atan2(self.zz, self.xx))}")
+        self.ang = -(math.atan2(self.xx, self.zz))*180 / math.pi
 
     #def timer_callback(self):  # タイマーのコールバック関数
     #    self.pub.publish(self.vel)  # 速度指令メッセージのパブリッシュ 
@@ -111,7 +147,12 @@ class Sekkin(Node):
                 print('エラー状態')
             #rclpy.spin_once(self)
 
+   
     def happymove(self, srv_req, srv_res):
+        kyori = self.sekkinclient.pia_send_request()
+        print(kyori)
+        self.xx = kyori.pose.x
+        self.zz = kyori.pose.z
         self.master = srv_req.text
         self.get_logger().info(f"{self.master}")
         while rclpy.ok():
@@ -122,9 +163,11 @@ class Sekkin(Node):
                 self.bc_node.translate_dist(self.dis)
                 time.sleep(1.5)
                 self.bc_node.translate_dist(-0.2, 0.1)
-                self.set_disan()
+                #self.set_disan()
+                #print(self.dis)
+                #print(self.ang)
                 #self.happy_move(0, self.ang)
-                self.bc_node.rotate_angle(self.ang)
+                #self.bc_node.rotate_angle(self.ang)
                 self.get_logger().info(f'end')
                 break
             rclpy.spin_once(self)
@@ -134,15 +177,13 @@ class Sekkin(Node):
 def main(args = None):
     print('start')
     rclpy.init()
+    srv = SekkinClient()
     node = Sekkin()
+    node.set_sekkin_client(srv)
     try:
-        rclpy.spin(node)
-        #print('waite')
-        #node.happymove()
-        #print('unti')
-        
-        print('owari')
-        #node.happy_move()
+        while True:
+            rclpy.spin_once(node)
+
     except KeyboardInterrupt:
         print('Ctrl+C pushed')
     except ExternalShutdownException:
