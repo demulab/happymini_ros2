@@ -28,6 +28,9 @@ from rclpy.qos import QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolic
 from rclpy.qos import QoSProfile
 
 from happymini_msgs.srv import PersonMulti, PersonInArea
+import os
+from ament_index_python.packages import get_package_share_directory
+
 
 
 class PersonClient(Node):
@@ -55,8 +58,15 @@ class PersonArea(Node):
     def __init__(self):
         super().__init__('object_detection')
 
+        area_path = os.path.join(
+            get_package_share_directory('happymini_navigation'), 
+            'maps',
+            'arena.png')
+        self.area_img = cv2.imread(area_path, 0)
+        self.ppl_loc_viz_img = cv2.imread(area_path, 1)
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
+        self.tf_broadcaster = TransformBroadcaster(self)
         amcl_pose_qos = QoSProfile(
           durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
           reliability=QoSReliabilityPolicy.RELIABLE,
@@ -116,51 +126,97 @@ class PersonArea(Node):
         x = self.t.transform.translation.x
         y = self.t.transform.translation.y
 
+
         map_x = self.mapinfo.origin.position.x
         map_y = self.mapinfo.origin.position.y
 
-        robotx = int((x - map_x) / self.mapinfo.resolution)
-        roboty = int((y - map_y) / self.mapinfo.resolution)
+        robotx = -int( (x + map_x) / self.mapinfo.resolution) 
+        roboty = self.mapinfo.height + int((y + map_y) / self.mapinfo.resolution)
+
+
+
+        print("map height, map width", self.mapinfo.height, self.mapinfo.width)
+        print(self.ppl_loc_viz_img.shape)
+        print(y)
+        print(map_y)
 
         print('robo x', robotx)
         print('robo y', roboty)
 
         #print('r :', math.degrees(euler[0]))
         #print('p :', math.degrees(euler[1]))
-        print('y :', math.degrees(euler[2]))
+        #print('y :', math.degrees(euler[2]))
         min_dist = 10000
         min_idx = 0
+        ppl_found = False
+        print(f"numbers of ppl found : {len(self.personmulti.poses)}")
+
         for i in range(len(self.personmulti.poses)):
             angle = math.atan2(self.personmulti.poses[i].z, self.personmulti.poses[i].x) - math.pi/2
             dist = math.sqrt(self.personmulti.poses[i].x**2 + self.personmulti.poses[i].z**2)
             print('people :', math.degrees(angle))
             print('peoplemap :', math.degrees(euler[2] - angle))
             people_x = -dist * math.cos(euler[2]-angle) 
-            people_y = dist * math.sin(euler[2]-angle)
-            print('peplex :', people_x)
-            print('peopley :', people_y)
-            print('dest :', dist)
+            people_y = -dist * math.sin(euler[2]-angle)
+            #print('peplex :', people_x)
+            #print('peopley :', people_y)
+            #print('dest :', dist)
             map_x = self.mapinfo.origin.position.x
             map_y = self.mapinfo.origin.position.y
-            print(self.mapinfo.origin.position)
-            pxx = robotx + int((people_x - map_x) / self.mapinfo.resolution)
-            pxy = roboty + int((people_y - map_y) / self.mapinfo.resolution)
-            cv2.circle(self.map, (pxy, pxx), 10, 255, -1)
-            cv2.imwrite('/home/demulab/test_data/map2.png', self.map)
+            print("x in map ", people_x)
+            print("y in map", people_y)
+
+
+
+            pxx = robotx - int(people_x  / self.mapinfo.resolution) -1
+            pxy = roboty - int(people_y / self.mapinfo.resolution) -1
+            #cv2.circle(self.map, (pxy, pxx), 10, 255, -1)
+            #cv2.imwrite('/home/demulab/test_data/map2.png', self.map)
             print('pxx :', pxx)
             print('pxy :', pxy)
-            people_map_x = x + int((people_x - map_x))
-            people_map_y = y + int((people_y - map_y))
+            people_map_x = x + people_x - map_x
+            people_map_y = y + people_y - map_y
 
-            if pxx > self.mapinfo.width*0.9 or pxy > self.mapinfo.height*0.98 :
-                print('people out')
-            elif pxx < self.mapinfo.width*-0.02 or pxy < self.mapinfo.height*0.15:
-                print('people out')
-            else: 
+            ppl_out = False
+            if pxx > self.mapinfo.width or pxy > self.mapinfo.height:
+                print("people out from map")
+                ppl_out = True
+            elif pxx < 0 or pxy < 0:
+                print("people out from map")
+                ppl_out = True
+            elif self.area_img[pxy, pxx] == 0:
+                print("people out from area")
+                ppl_out = True
+            else:
+                ppl_found = True
                 if min_dist > dist:
                     min_dist = dist
                     min_idx = i
-        if len(self.personmulti.poses) > 0 :
+
+            #cv2.circle(self.ppl_loc_viz_img, (map_origin_x, map_origin_y), 10, (255, 255,0), -1)
+            cv2.circle(self.ppl_loc_viz_img, (robotx, roboty), 5, (255, 0, 0), -1)
+            cv2.circle(self.ppl_loc_viz_img, (pxx, pxy), 5, (0, 0, 255) if ppl_out else (0, 255, 0), -1)
+            cv2.imwrite('/home/demulab/test_data/ppl_loc.png', self.ppl_loc_viz_img)
+            ppl_transform = TransformStamped()
+
+            ppl_transform.header.frame_id = "map"
+            ppl_transform.header.stamp = self.get_clock().now().to_msg()
+            ppl_transform.child_frame_id = f"ppl{i}"
+            ppl_transform.transform.translation.x = people_map_x
+            ppl_transform.transform.translation.y = people_map_y 
+            #ppl_transform.header.frame_id = "map"
+            #ppl_transform.header.stamp = self.get_clock().now().to_msg()
+            #ppl_transform.child_frame_id = f"robot"
+            #ppl_transform.transform.translation.x = x
+            #ppl_transform.transform.translation.y = y 
+
+            self.tf_broadcaster.sendTransform(ppl_transform)
+            #if pxx > self.mapinfo.width*0.9 or pxy > self.mapinfo.height*0.98 :
+            #    print('people out')
+            #elif pxx < self.mapinfo.width*-0.02 or pxy < self.mapinfo.height*0.15:
+            #    print('people out')
+
+        if len(self.personmulti.poses) > 0 and ppl_found:
             print(self.personmulti.poses[min_idx])
             img = CvBridge().imgmsg_to_cv2(self.personmulti.images[min_idx])
             cv2.imwrite('/home/demulab/test_data/people.png', img)
@@ -169,7 +225,7 @@ class PersonArea(Node):
             res.map_pose.x = people_map_x
             res.map_pose.y = people_map_y
             return res
-        else :
+        else:
             res.result = False
             return res
 

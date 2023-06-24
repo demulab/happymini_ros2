@@ -68,6 +68,11 @@ ros2 run yolov5_ros2 person_detector
 ```
 ※将来的に人認識はこれに変更する予定
 
+人認識3
+```bash  
+ros2 run yolov5_ros2 person_in_area
+```
+
 approach_person
 ```bash
 ros2 run approach_person approach_person

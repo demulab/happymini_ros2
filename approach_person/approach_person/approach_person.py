@@ -149,8 +149,13 @@ class Sekkin(Node):
 
    
     def happymove(self, srv_req, srv_res):
-        kyori = self.sekkinclient.pia_send_request()
-        print(kyori)
+        while True:
+            kyori = self.sekkinclient.pia_send_request()
+            if not kyori.result: 
+                self.bc_node.rotate_angle(-45)
+            else:
+                break
+
         self.xx = kyori.pose.x
         self.zz = kyori.pose.z
         self.master = srv_req.text

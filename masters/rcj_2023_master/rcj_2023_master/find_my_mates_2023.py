@@ -263,6 +263,22 @@ def main():
 
 
         # 3人目今後やる
+        nb.execute('fmm_find2')
+        time.sleep(1.0)
+        hi.execute()
+        synthesis2("What's your name?")
+        name = tc.stt_send_request()
+        #name = sp.execute()
+        name_d = tc.nd_send_request(name)
+        res = per.execute()
+        nb.execute('fmm_Operator')
+        time.sleep(1.0)
+        #tc.tts_send_request("Name is " + name_d)
+        synthesis2("Name is " + name_d)
+        #synthesis2("Name is " + name)
+        attribute_sentence = at.execute(res.result, res.environment_image)
+        #tc.tts_send_request(attribute_sentence)
+        synthesis2(attribute_sentence)
 
         tc.tts_send_request("Fisish, find my mates.")
         #synthesis2("Finish, find my mates.")
