@@ -64,6 +64,7 @@ class PersonArea(Node):
             'arena.png')
         self.area_img = cv2.imread(area_path, 0)
         self.ppl_loc_viz_img = cv2.imread(area_path, 1)
+        self.discovered_ppl = []
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
         self.tf_broadcaster = TransformBroadcaster(self)
@@ -151,6 +152,10 @@ class PersonArea(Node):
         ppl_found = False
         print(f"numbers of ppl found : {len(self.personmulti.poses)}")
 
+        is_dup = [False for i in range(len(self.personmulti.poses))]
+        out_of_area = [False for i in range(len(self.personmulti.poses))]
+        distance_from_robot = []
+
         for i in range(len(self.personmulti.poses)):
             angle = math.atan2(self.personmulti.poses[i].z, self.personmulti.poses[i].x) - math.pi/2
             dist = math.sqrt(self.personmulti.poses[i].x**2 + self.personmulti.poses[i].z**2)
@@ -180,23 +185,33 @@ class PersonArea(Node):
             ppl_out = False
             if pxx > self.mapinfo.width or pxy > self.mapinfo.height:
                 print("people out from map")
-                ppl_out = True
+                out_of_area[i] = True
             elif pxx < 0 or pxy < 0:
                 print("people out from map")
-                ppl_out = True
+                out_of_area[i] = True
             elif self.area_img[pxy, pxx] == 0:
                 print("people out from area")
-                ppl_out = True
+                out_of_area[i] = True
             else:
-                ppl_found = True
-                if min_dist > dist:
-                    min_dist = dist
-                    min_idx = i
+                print("amount of discoverd ppl : ", len(self.discovered_ppl))
+                for j in range(len(self.discovered_ppl)):
+                    diff = math.sqrt((people_map_x - self.discovered_ppl[j][0]) ** 2 + (people_map_y - self.discovered_ppl[j][1]) **2)
+                    print("checking distance from discovered person : ", diff)
+                    if diff < 0.25:
+                        is_dup[i] = True
+                        print("same ppl found, skipping")
+                        break
 
-            #cv2.circle(self.ppl_loc_viz_img, (map_origin_x, map_origin_y), 10, (255, 255,0), -1)
+
             cv2.circle(self.ppl_loc_viz_img, (robotx, roboty), 5, (255, 0, 0), -1)
-            cv2.circle(self.ppl_loc_viz_img, (pxx, pxy), 5, (0, 0, 255) if ppl_out else (0, 255, 0), -1)
-            cv2.imwrite('/home/demulab/test_data/ppl_loc.png', self.ppl_loc_viz_img)
+            if not is_dup[i]:
+                cv2.circle(self.ppl_loc_viz_img, (pxx, pxy), 5, (0, 0, 255) if out_of_area[i] else (0, 255, 0), -1)
+                cv2.imwrite('/home/demulab/test_data/ppl_loc.png', self.ppl_loc_viz_img)
+
+            distance_from_robot.append(dist)
+        
+            #cv2.circle(self.ppl_loc_viz_img, (map_origin_x, map_origin_y), 10, (255, 255,0), -1)
+
             ppl_transform = TransformStamped()
 
             ppl_transform.header.frame_id = "map"
@@ -216,14 +231,22 @@ class PersonArea(Node):
             #elif pxx < self.mapinfo.width*-0.02 or pxy < self.mapinfo.height*0.15:
             #    print('people out')
 
-        if len(self.personmulti.poses) > 0 and ppl_found:
-            print(self.personmulti.poses[min_idx])
-            img = CvBridge().imgmsg_to_cv2(self.personmulti.images[min_idx])
-            cv2.imwrite('/home/demulab/test_data/people.png', img)
-            res.result = True
-            res.pose = self.personmulti.poses[min_idx]
-            res.map_pose.x = people_map_x
-            res.map_pose.y = people_map_y
+
+        distance_list = sorted(range(len(distance_from_robot)), key=distance_from_robot.__getitem__)
+
+        if len(self.personmulti.poses) > 0:
+
+            for i in range(len(distance_list)):
+                if not is_dup[distance_list[i]] and not out_of_area[distance_list[i]]:
+                    print(self.personmulti.poses[min_idx])
+                    img = CvBridge().imgmsg_to_cv2(self.personmulti.images[min_idx])
+                    cv2.imwrite('/home/demulab/test_data/people.png', img)
+                    res.result = True
+                    res.pose = self.personmulti.poses[min_idx]
+                    res.map_pose.x = people_map_x
+                    res.map_pose.y = people_map_y
+                    self.discovered_ppl.append((people_map_x, people_map_y))
+                    break
             return res
         else:
             res.result = False
