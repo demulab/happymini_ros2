@@ -183,7 +183,7 @@ class PersonArea(Node):
             people_map_y = y + people_y - map_y
 
             ppl_out = False
-            if pxx > self.mapinfo.width or pxy > self.mapinfo.height:
+            if pxx >= self.mapinfo.width or pxy >= self.mapinfo.height:
                 print("people out from map")
                 out_of_area[i] = True
             elif pxx < 0 or pxy < 0:

@@ -82,30 +82,36 @@ class ObjectDetection(Node):
                 depth = np.median(self.img_depth[v1:v2+1, u1:u2+1])
                 ppl_img = img_color[v1:v2+1, u1:u2+1]
                 img_msg = CvBridge().cv2_to_imgmsg(ppl_img, 'bgr8')
-                response.images.append(img_msg)
-                print(ppl_img.shape)
-                print('yolo3')
+                area =  (u2 - u1) * (v2 - v1)
+                img_h, img_w, _ = img_color.shape
+                arearatio = float(area)/float(img_h * img_w)
 
-                #if depth != 0:
-                z = depth * 1e-3
-                #z = min(dep)
-                fx = self.k[0]
-                fy = self.k[4]
-                cx = self.k[2]
-                cy = self.k[5]
-                x = z / fx * (u - cx)
-                y = z / fy * (v - cy)
-                point[0] = x
-                point[1] = y
-                point[2] = z
+                if arearatio >= 0.03:
+                    response.images.append(img_msg)
+                    print(ppl_img.shape)
+                    print('yolo3')
 
-                ppl_point =Vector3()
-                ppl_point.x = x
-                ppl_point.y = y
-                ppl_point.z = z
-                response.poses.append(ppl_point)
-                response.tags.append(r.name)
-                response.likelihood.append(r.conf)
+                    #if depth != 0:
+                    z = depth * 1e-3
+                    #z = min(dep)
+                    fx = self.k[0]
+                    fy = self.k[4]
+                    cx = self.k[2]
+                    cy = self.k[5]
+                    x = z / fx * (u - cx)
+                    y = z / fy * (v - cy)
+                    point[0] = x
+                    point[1] = y
+                    point[2] = z
+
+                    ppl_point =Vector3()
+                    ppl_point.x = x
+                    ppl_point.y = y
+                    ppl_point.z = z
+                    if abs(z) < 3: 
+                        response.poses.append(ppl_point)
+                        response.tags.append(r.name)
+                        response.likelihood.append(r.conf)
 
                 #if target is not None:
                 #    minpoint.append(np.array(point))

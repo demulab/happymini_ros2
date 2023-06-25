@@ -10,6 +10,7 @@ gnome-terminal \
     $tab 'bash -c "sleep 1.4 ; ./name_detect.bash;bash"'\
     $tab 'bash -c "sleep 1.4 ; ./rs_launch.bash;bash"'\
     $tab 'bash -c "sleep 1.6 ; ./speech_to_text.bash;bash"'\
+    $tab 'bash -c "sleep 1.6 ; ./mimic3_play.bash;bash"'\
     $tab 'bash -c "sleep 1.5 ; ./v4l2_camera_node.bash;bash"'\
     $tab 'bash -c "sleep 1.5 ; ./object_detection_tf.bash;bash"'\
     $tab 'bash -c "sleep 3.0 ; ./person_detector.bash;bash"'\
