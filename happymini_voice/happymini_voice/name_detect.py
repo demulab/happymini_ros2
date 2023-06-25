@@ -72,9 +72,9 @@ class NameDetectServer(Node):
         #        best_word = word
         #if best_sim > 70:
         #    srv_res.result = best_word
-        #if srv_res.result != 'None':
-        #    self.word_list.remove(best_word)
-        #    print(self.word_list)
+        if srv_res.result != 'None':
+            self.word_list.remove(res[0][0])
+            print(self.word_list)
         #print("Best Word:", srv_res.result)
         #print("Similarity:", best_sim)
         return srv_res

@@ -64,7 +64,7 @@ class TestClient(Node):
             else :
                 i += 1
                 print(name_d)
-                synthesis2('Sorry. I did not catch that Please try again.')
+                self.tts_send_request('Sorry. I did not catch that Please try again.')
         return name_d
 
 
@@ -101,20 +101,20 @@ class TestClient(Node):
             self.get_logger().info(f"Service call failed")
             return None
 
-    #def tts_send_request(self, text=None):
-    #    tts_srv_result = 'None'
-    #    self.tts_srv_req.text = text
+    def tts_send_request(self, text=None):
+        tts_srv_result = 'None'
+        self.tts_srv_req.text = text
 
-    #    tts_srv_future = self.tts_srv.call_async(self.tts_srv_req)
-    #    while not tts_srv_future.done() and rclpy.ok():
-    #        rclpy.spin_once(self, timeout_sec=0.1)
-    #    if tts_srv_future.result() is not None:
-    #        tts_srv_result = tts_srv_future.result().result
-    #        print(tts_srv_result)
-    #        return tts_srv_result
-    #    else:
-    #        self.get_logger().info(f"Service call failed")
-    #        return None
+        tts_srv_future = self.tts_srv.call_async(self.tts_srv_req)
+        while not tts_srv_future.done() and rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.1)
+        if tts_srv_future.result() is not None:
+            tts_srv_result = tts_srv_future.result().result
+            print(tts_srv_result)
+            return tts_srv_result
+        else:
+            self.get_logger().info(f"Service call failed")
+            return None
 
         
 class Navigation(Node):
@@ -235,7 +235,7 @@ class PersonDetector(Node):
     
 def main():
     rclpy.init()
-    synthesis2("Start, find my mates.")
+    #synthesis2("Start, find my mates.")
     nb = Navigation()
     hi = HitoSekkin()
     #sp = Speech()
@@ -244,7 +244,7 @@ def main():
     print("tc init")
     tc = TestClient()
     
-    #tc.tts_send_request("start, find my mates.")
+    tc.tts_send_request("start, find my mates.")
 
     print("tc initialized")
     try:
@@ -252,7 +252,8 @@ def main():
         nb.execute('fmm_find')
         time.sleep(1.0)
         hi.execute()
-        synthesis2("What's your name?")
+        tc.tts_send_request("What's your name?")
+        #synthesis2("What's your name?")
 
 
         name_d = tc.get_person_name()
@@ -272,18 +273,19 @@ def main():
         res = per.execute()
         nb.execute('fmm_Operator')
         time.sleep(1.0)
-        #tc.tts_send_request("Name is " + name_d)
-        synthesis2("Name is " + name_d)
+        tc.tts_send_request("Name is " + name_d)
+        #synthesis2("Name is " + name_d)
         #synthesis2("Name is " + name)
         attribute_sentence = at.execute(res.result, res.environment_image)
-        #tc.tts_send_request(attribute_sentence)
-        synthesis2(attribute_sentence)
+        tc.tts_send_request(attribute_sentence)
+        #synthesis2(attribute_sentence)
  
         #2人目
         nb.execute('fmm_find2')
         time.sleep(1.0)
         hi.execute()
-        synthesis2("What's your name?")
+        tc.tts_send_request("What's your name?")
+        #synthesis2("What's your name?")
         name_d = tc.get_person_name()
         #i = 0
         #timeout = 3
@@ -301,19 +303,20 @@ def main():
         res = per.execute()
         nb.execute('fmm_Operator')
         time.sleep(1.0)
-        #tc.tts_send_request("Name is " + name_d)
-        synthesis2("Name is " + name_d)
+        tc.tts_send_request("Name is " + name_d)
+        #synthesis2("Name is " + name_d)
         #synthesis2("Name is " + name)
         attribute_sentence = at.execute(res.result, res.environment_image)
-        #tc.tts_send_request(attribute_sentence)
-        synthesis2(attribute_sentence)
+        tc.tts_send_request(attribute_sentence)
+        #synthesis2(attribute_sentence)
 
 
         # 3人目
         nb.execute('fmm_find2')
         time.sleep(1.0)
         hi.execute()
-        synthesis2("What's your name?")
+        tc.tts_send_request("What's your name?")
+        #synthesis2("What's your name?")
         name_d = tc.get_person_name()
         #i = 0
         #timeout = 3
@@ -331,12 +334,12 @@ def main():
         res = per.execute()
         nb.execute('fmm_Operator')
         time.sleep(1.0)
-        #tc.tts_send_request("Name is " + name_d)
-        synthesis2("Name is " + name_d)
+        tc.tts_send_request("Name is " + name_d)
+        #synthesis2("Name is " + name_d)
         #synthesis2("Name is " + name)
         attribute_sentence = at.execute(res.result, res.environment_image)
-        #tc.tts_send_request(attribute_sentence)
-        synthesis2(attribute_sentence)
+        tc.tts_send_request(attribute_sentence)
+        #synthesis2(attribute_sentence)
 
         tc.tts_send_request("Fisish, find my mates.")
         #synthesis2("Finish, find my mates.")
