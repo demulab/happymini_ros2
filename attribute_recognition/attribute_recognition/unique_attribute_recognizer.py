@@ -41,7 +41,6 @@ class UniqueAttributeRecognizer:
         generated_ids = self.model.generate(pixel_values=pixel_values, max_length=50)
         generated_caption = self.processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
         #generated_caption = ""
-
         sentence = self.attributesToSentence(generated_caption, demographics)
         return sentence
 
@@ -91,13 +90,17 @@ class UniqueAttributeRecognizer:
         if not "age" in demographics:
             demographics["age"] = 20
 
-        age_description = "young" if demographics["age"] < 30 else ""
-        age_description = "middle" if demographics["age"] >= 30 and demographics["age"] < 60 else age_description
+        age_description = "young" if demographics["age"] < 35 else ""
+        age_description = "middle" if demographics["age"] >= 35 and demographics["age"] < 60 else age_description
         age_description = "old" if demographics["age"] > 60 else age_description
 
         age_sentence = "{0} looks {1}.".format(pron, age_description)
 
-        return "{0} {1} {2}".format(description, gender_sentence, age_sentence)
+        race_sentence = ""
+        if demographics["face_found"]:
+            race_sentence = "{0} is {1}".format(pron, demographics["dominant_race"])
+        
+        return "{0} {1} {2} {3}".format(description, gender_sentence, age_sentence, race_sentence)
 
 
 

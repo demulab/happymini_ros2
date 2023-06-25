@@ -42,20 +42,39 @@ def synthesis2(text = None):
 class TestClient(Node):
     def __init__(self):
         super().__init__('test_client')
+        self.stt_srv_req = SpeechToText.Request()
+        self.nd_srv_req = NameDetect.Request()
+        self.tts_srv_req = TextToSpeech.Request()
         self.stt_srv = self.create_client(SpeechToText, 'stt')
+        print("stt service created", self.stt_srv)
         self.nd_srv = self.create_client(NameDetect, 'nd')
         self.tts_srv = self.create_client(TextToSpeech, 'tts')
         while not self.stt_srv.wait_for_service(timeout_sec=1.0) and self.nd_srv.wait_for_service(timeout_sec=1.0) and self.nd_srv.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("Message is not here ...")
-        self.stt_srv_req = SpeechToText.Request()
-        self.nd_srv_req = NameDetect.Request()
-        self.tts_srv_req = TextToSpeech.Request()
+
+
+    
+    def get_person_name(self, timeout = 3) -> str:
+        i = 0
+        while i < timeout: 
+            name = self.stt_send_request()
+            name_d = self.nd_send_request(name)
+            if name_d.lower().find("none") == -1:
+                break
+            else :
+                i += 1
+                print(name_d)
+                synthesis2('Sorry. I did not catch that Please try again.')
+        return name_d
+
 
     def stt_send_request(self, cmd='start'):
         stt_srv_result = 'None'
-        self.stt_srv_req.cmd = cmd
+        stt_srv_req = SpeechToText.Request()
+        stt_srv_req.cmd = cmd
+        self.stt_srv = self.create_client(SpeechToText, 'stt')
 
-        stt_srv_future = self.stt_srv.call_async(self.stt_srv_req)
+        stt_srv_future = self.stt_srv.call_async(stt_srv_req)
         while not stt_srv_future.done() and rclpy.ok():
             rclpy.spin_once(self, timeout_sec=0.1)
         if stt_srv_future.result() is not None:
@@ -68,8 +87,9 @@ class TestClient(Node):
 
     def nd_send_request(self, text=None):
         nd_srv_result = 'None'
+        self.nd_srv_req = NameDetect.Request()
         self.nd_srv_req.text = text
-
+        self.nd_srv = self.create_client(NameDetect, 'nd')
         nd_srv_future = self.nd_srv.call_async(self.nd_srv_req)
         while not nd_srv_future.done() and rclpy.ok():
             rclpy.spin_once(self, timeout_sec=0.1)
@@ -221,18 +241,34 @@ def main():
     #sp = Speech()
     at = AttributeRecog()
     per = PersonDetector()
+    print("tc init")
     tc = TestClient()
+    
     #tc.tts_send_request("start, find my mates.")
 
+    print("tc initialized")
     try:
         #1人目
         nb.execute('fmm_find')
         time.sleep(1.0)
         hi.execute()
         synthesis2("What's your name?")
-        name = tc.stt_send_request()
+
+
+        name_d = tc.get_person_name()
+        #i = 0
+        #timeout = 3
+        #while i < timeout:           
+        #    name = tc.stt_send_request()
+        #    name_d = tc.nd_send_request(name)
+        #    if name_d.lower().find("none") == -1:
+        #        break
+        #    else:
+        #        i+=1
+        #        synthesis2('Sorry. I did not catch that Please try again.')
+        #name = tc.stt_send_request()
         #name = sp.execute()
-        name_d = tc.nd_send_request(name)
+        #name_d = tc.nd_send_request(name)
         res = per.execute()
         nb.execute('fmm_Operator')
         time.sleep(1.0)
@@ -248,9 +284,20 @@ def main():
         time.sleep(1.0)
         hi.execute()
         synthesis2("What's your name?")
-        name = tc.stt_send_request()
-        #name = sp.execute()
-        name_d = tc.nd_send_request(name)
+        name_d = tc.get_person_name()
+        #i = 0
+        #timeout = 3
+        #while i < timeout:           
+        #    name = tc.stt_send_request()
+        #    name_d = tc.nd_send_request(name)
+        #    if name_d.lower().find("none") == -1:
+        #        break
+        #    else:
+        #        i+=1
+        #        synthesis2('Sorry. I did not catch that Please try again.')        
+        #name = tc.stt_send_request()
+        ##name = sp.execute()
+        #name_d = tc.nd_send_request(name)
         res = per.execute()
         nb.execute('fmm_Operator')
         time.sleep(1.0)
@@ -262,14 +309,25 @@ def main():
         synthesis2(attribute_sentence)
 
 
-        # 3人目今後やる
+        # 3人目
         nb.execute('fmm_find2')
         time.sleep(1.0)
         hi.execute()
         synthesis2("What's your name?")
-        name = tc.stt_send_request()
+        name_d = tc.get_person_name()
+        #i = 0
+        #timeout = 3
+        #while i < timeout:           
+        #    name = tc.stt_send_request()
+        #    name_d = tc.nd_send_request(name)
+        #    if name_d.lower().find("none") == -1:
+        #        break
+        #    else:
+        #        i+=1
+        #        synthesis2('Sorry. I did not catch that Please try again.')        
+        #name = tc.stt_send_request()
         #name = sp.execute()
-        name_d = tc.nd_send_request(name)
+        #name_d = tc.nd_send_request(name)
         res = per.execute()
         nb.execute('fmm_Operator')
         time.sleep(1.0)
