@@ -6,7 +6,7 @@ from sensor_msgs.msg import Image
 #from happymini_msgs.action import GraspBag
 import time
 #from happymini_manipulation.motor_controller import JointController
-from happymini_msgs.srv import StringCommand, SpeechToText, TextToSpeech, SetimentAnalysis
+from happymini_msgs.srv import StringCommand, SpeechToText, TextToSpeech, SetimentAnalysis, FaceEmotion, DetectPerson
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from cv_bridge import CvBridge
@@ -17,13 +17,55 @@ class TestClient(Node):
         super().__init__('test_client')
         self.stt_srv_req = SpeechToText.Request()
         self.sa_srv_req = SetimentAnalysis.Request()
+        self.fed_srv_req = FaceEmotion.Request()
         self.tts_srv_req = TextToSpeech.Request()
+
+        self.node = rclpy.create_node('person_recog')
+        self.__client = self.node.create_client(DetectPerson, '/fmm_person_service/detect')
+        self.__req = None
+        self.future = None
+        self.__bridge = CvBridge()
+        self.__cnt = 0
 
         self.stt_srv = self.create_client(SpeechToText, 'stt')
         self.sa_srv = self.create_client(SetimentAnalysis, 'final/setiment_analysis')
+        self.fed_srv = self.create_client(FaceEmotion, 'final/face_emotion')
         self.tts_srv = self.create_client(TextToSpeech, 'tts')
         while not self.stt_srv.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("Message is not here ...")
+
+    def person_detecter(self) -> DetectPerson.Response:
+        self.__req = DetectPerson.Request()
+        self.future = self.__client.call_async(self.__req)
+        rclpy.spin_until_future_complete(self.node, self.future)
+
+        while not self.future.done() and rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.1)
+        if self.future.result() is not None:
+            response = self.future.result()
+            img_cv = self.__bridge.imgmsg_to_cv2(response.result)
+            cv2.imwrite("~/main_ws/src/happymini_ros/masters/rcj_2023_master/img{0}.png".format(self.__cnt), img_cv)
+            self.__cnt += 1
+        else:
+           self.get_logger().info('サービスが応答しませんでした。')
+        return response
+
+    def fed_send_request(self, res):
+        fed_srv_result = 'None'
+        fed_srv_req = FaceEmotion.Request()
+        fed_srv_req.image = res
+
+        fed_srv_future = self.fed_srv.call_async(fed_srv_req)
+        while not fed_srv_future.done() and rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.1)
+        if fed_srv_future.result() is not None:
+            fed_srv_result = fed_srv_future.result()
+            print(fed_srv_result)
+            return fed_srv_result
+        else:
+            self.get_logger().info(f"Service call failed")
+            return None
+
 
 
     def stt_send_request(self, cmd='start'):
@@ -84,6 +126,7 @@ def main():
         happy_score = 0
         bad_score = 0
         surprised_score = 0
+        
         while bad_score < 5:
             print("bad score :", bad_score)
             word = tc.stt_send_request()
@@ -108,10 +151,40 @@ def main():
                 tc.tts_send_request("There seems to be a trouble happening.")
             time.sleep(1)
 
+        
         tc.tts_send_request("Hello, I am Happy Mini.")
         tc.tts_send_request("Let's stop the fight.")
-        tc.tts_send_request("I am going to make you happy.")        
+        tc.tts_send_request("I am going to make you happy.")
         
+        while happy_score < 5:
+            res = tc.person_detecter()
+            face_emotion = tc.fed_send_request(res.result)
+            max_score = 0
+            max_idx = 0
+            for i in range(len(face_emotion.emotion)):
+                if max_score < face_emotion.likelihood[i]:
+                    max_score = face_emotion.likelihood[i]
+                    max_idx = i
+            
+
+            print("emotion is ", face_emotion.emotion[max_idx])
+            if face_emotion.emotion[max_idx] in ["happy"]:
+                happy_score += 1
+                tc.tts_send_request(f"Detected happy feeling for {happy_score} time.")
+
+                if happy_score == 3:
+                    tc.tts_send_request("Everyone is getting happy.")
+
+                elif happy_score == 4:
+                    tc.tts_send_request("Everyone is happy.")
+            elif face_emotion.emotion[max_idx] in ["angry", "disgust"]:
+                tc.tts_send_request(f"Let's relax and have a happy time.")
+
+
+        tc.tts_send_request("I am Happy Mini.")
+        tc.tts_send_request("I make people happy.")
+            
+
     except KeyboardInterrupt:
         pass
     finally:

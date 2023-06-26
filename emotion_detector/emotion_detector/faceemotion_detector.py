@@ -21,17 +21,20 @@ class FaceEmotionDetector(Node):
 
     def detectEmotion(self, request, response):
         cv_img = self.bridge.imgmsg_to_cv2(request.image)
+        try:
+            demographies = DeepFace.analyze(cv_img, 
+                detector_backend = self.__facedetect_backends[3]
+            )
+            emotion = demographies[0]
 
-        pil_img = PILImage.fromarray(cv_img).convert("RGB")
-        demographies = DeepFace.analyze(pil_img, 
-            detector_backend = self.__facedetect_backends[3]
-        )
-        emotion = demographies[0]
-
-        for key, value in emotion["emotion"].items():
-            response.emotion.append(key)
-            response.likelihood.append(value)
-        return response
+            for key, value in emotion["emotion"].items():
+                response.emotion.append(key)
+                response.likelihood.append(value)
+            return response
+        except ValueError:
+            response.emotion.append("neutral")
+            response.likelihood.append(0)
+            return response
     
 def main(args=None):
     rclpy.init(args=args)
