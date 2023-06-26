@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'rcfrance_2023_master'
+package_name = 'emotion_detector'
 
 setup(
     name=package_name,
@@ -13,15 +13,15 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='yusukepad',
+    maintainer='demulab',
     maintainer_email='c1005073@planet.kanazawa-it.ac.jp',
     description='TODO: Package description',
     license='TODO: License declaration',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'carry_my_luggage_france2023 = rcfrance_2023_master.carry_my_luggage_france2023:main',
-            'final_demo_france2023 = rcfrance_2023_master.final_demo_france2023:main'
-        ],
+            "setiment_analysis_node = emotion_detector.setiment_detector:main ",
+            "faceemotion_detector_node = emotion_detector.faceemotion_detector:main "
+        ]
     },
 )

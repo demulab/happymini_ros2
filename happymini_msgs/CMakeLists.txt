@@ -22,6 +22,9 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     "srv/DetectPerson.srv"
     "srv/PersonMulti.srv"
     "srv/PersonInArea.srv"
+    "srv/FaceChange.srv"
+    "srv/FaceEmotion.srv"
+    "srv/SetimentAnalysis.srv"
     "action/GraspBag.action"
     "msg/DetectionResult.msg"
     DEPENDENCIES sensor_msgs geometry_msgs
