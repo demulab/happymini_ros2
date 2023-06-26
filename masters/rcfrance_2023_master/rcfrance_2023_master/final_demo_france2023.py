@@ -22,7 +22,7 @@ class TestClient(Node):
         self.stt_srv = self.create_client(SpeechToText, 'stt')
         self.sa_srv = self.create_client(SetimentAnalysis, 'final/setiment_analysis')
         self.tts_srv = self.create_client(TextToSpeech, 'tts')
-        while not self.stt_srv.wait_for_service(timeout_sec=1.0) and self.nd_srv.wait_for_service(timeout_sec=1.0) and self.nd_srv.wait_for_service(timeout_sec=1.0):
+        while not self.stt_srv.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("Message is not here ...")
 
 
@@ -81,8 +81,37 @@ def main():
     rclpy.init()
     tc = TestClient()
     try:
-        word = tc.stt_send_request()
-        tc.sa_send_request(word)
+        happy_score = 0
+        bad_score = 0
+        surprised_score = 0
+        while bad_score < 5:
+            print("bad score :", bad_score)
+            word = tc.stt_send_request()
+            emotion = tc.sa_send_request(word)
+
+            max_score = 0
+            max_idx = 0
+            for i in range(len(emotion.emotion)):
+                if max_score < emotion.likelihood[i]:
+                    max_score = emotion.likelihood[i]
+                    max_idx = i
+            
+            if emotion.emotion[max_idx] in ["anger", "disgust"]:
+                bad_score += 1
+                tc.tts_send_request(f"Detected negative feeling for {bad_score} time.")
+                if bad_score == 2:
+                    tc.tts_send_request("The mood is getting bad.")
+                elif bad_score == 4:
+                    tc.tts_send_request("This is going to be a fight.")
+            elif emotion.emotion[max_idx] in ["surprise"]:
+                surprised_score += 1
+                tc.tts_send_request("There seems to be a trouble happening.")
+            time.sleep(1)
+
+        tc.tts_send_request("Hello, I am Happy Mini.")
+        tc.tts_send_request("Let's stop the fight.")
+        tc.tts_send_request("I am going to make you happy.")        
+        
     except KeyboardInterrupt:
         pass
     finally:
