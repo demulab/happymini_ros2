@@ -22,6 +22,13 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     "srv/DetectPerson.srv"
     "srv/PersonMulti.srv"
     "srv/PersonInArea.srv"
+<<<<<<< Updated upstream
+=======
+    "srv/FaceChange.srv"
+    "srv/FaceEmotion.srv"
+    "srv/SetimentAnalysis.srv"
+    "srv/LDSDistanceFind.srv"
+>>>>>>> Stashed changes
     "action/GraspBag.action"
     "msg/DetectionResult.msg"
     DEPENDENCIES sensor_msgs geometry_msgs
