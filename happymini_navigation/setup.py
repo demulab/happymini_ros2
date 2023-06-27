@@ -32,7 +32,8 @@ setup(
         'console_scripts': [
             'set_location = happymini_navigation.set_location:main',
             'navi_location = happymini_navigation.navi_location:main',
-            'set_params = happymini_navigation.set_params:main'
+            'set_params = happymini_navigation.set_params:main',
+            'lds_distance_finder = happymini_navigation.lds_distance_finder:main'
         ],
     },
 )

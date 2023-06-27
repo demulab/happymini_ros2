@@ -25,6 +25,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     "srv/FaceChange.srv"
     "srv/FaceEmotion.srv"
     "srv/SetimentAnalysis.srv"
+    "srv/LDSDistanceFind.srv"
     "action/GraspBag.action"
     "msg/DetectionResult.msg"
     DEPENDENCIES sensor_msgs geometry_msgs

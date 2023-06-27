@@ -12,7 +12,31 @@ from geometry_msgs.msg import Twist  # Twistメッセージ型をインポート
 from nav_msgs.msg import Odometry    # Odometryメッセージ型をインポート
 from tf_transformations import euler_from_quaternion 
 from happymini_teleop.base_control import BaseControl
-from happymini_msgs.srv import TextToSpeech, PersonInArea
+from happymini_msgs.srv import TextToSpeech, PersonInArea, LDSDistanceFind
+
+class LDSClient(Node):
+    def __init__(self):
+        super().__init__('sekkin_client')
+        self.pia_srv = self.create_client(LDSDistanceFind, '/fmm/get_lds_distance')
+        while not self.pia_srv.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info("Message is not here ...")
+        self.pia_srv_req = LDSDistanceFind.Request()
+
+    def lds_send_request(self, text = ''):
+        pia_srv_result = 5
+        self.pia_srv_req.command = ""      
+ 
+        pia_srv_future = self.pia_srv.call_async(self.pia_srv_req)
+        while not pia_srv_future.done() and rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.1)
+        if pia_srv_future.result() is not None:
+            pia_srv_result = pia_srv_future.result()
+            print(pia_srv_result.distance)
+            return pia_srv_result.distance
+        else:
+            self.get_logger().info(f"Service call failed")
+            return None
+
 
 class SekkinClient(Node):
     def __init__(self):
@@ -36,9 +60,6 @@ class SekkinClient(Node):
         else:
             self.get_logger().info(f"Service call failed")
             return None
-
-
-
 
 
 class Sekkin(Node):
@@ -85,6 +106,9 @@ class Sekkin(Node):
     def set_sekkin_xy(self):
         self.sekkin_xy = self.sekkinclient.pia_send_request()
 
+
+    def set_lds_client(self, client):
+        self.ldsclient = client
 
     def set_sekkin_client(self, client):
         self.sekkinclient = client
@@ -156,6 +180,8 @@ class Sekkin(Node):
             else:
                 break
 
+
+        
         self.xx = kyori.pose.x
         self.zz = kyori.pose.z
         self.master = srv_req.text
@@ -165,9 +191,15 @@ class Sekkin(Node):
                 self.set_disan()
                 #self.happy_move(self.dis, self.ang)
                 self.bc_node.rotate_angle(self.ang)
-                self.bc_node.translate_dist(self.dis)
+                lds_kyori = self.ldsclient.lds_send_request()
+                print(f"realsense  distance : {self.dis}m, LDS distance : {lds_kyori}m")
+
+
+                fused_dis = min(self.dis, max(lds_kyori - 0.5, 0.1))
+                self.bc_node.translate_dist(fused_dis)
                 time.sleep(1.5)
-                self.bc_node.translate_dist(-0.2, 0.1)
+                if fused_dis == self.dis:
+                    self.bc_node.translate_dist(-0.2, 0.1)
                 #self.set_disan()
                 #print(self.dis)
                 #print(self.ang)
@@ -183,8 +215,10 @@ def main(args = None):
     print('start')
     rclpy.init()
     srv = SekkinClient()
+    lds = LDSClient()
     node = Sekkin()
     node.set_sekkin_client(srv)
+    node.set_lds_client(lds)
     try:
         while True:
             rclpy.spin_once(node)
