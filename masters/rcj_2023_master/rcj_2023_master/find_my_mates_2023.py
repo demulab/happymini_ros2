@@ -253,6 +253,8 @@ def main():
         time.sleep(1.0)
         hi.execute()
         tc.tts_send_request("What's your name?")
+        tc.tts_send_request("Say your name after the beep sound.")
+
         #synthesis2("What's your name?")
 
 
@@ -277,7 +279,9 @@ def main():
         #synthesis2("Name is " + name_d)
         #synthesis2("Name is " + name)
         attribute_sentence = at.execute(res.result, res.environment_image)
-        tc.tts_send_request(attribute_sentence)
+        features = attribute_sentence.split("_")
+        for i in range(len(features)):
+            tc.tts_send_request(features[i])
         #synthesis2(attribute_sentence)
  
         #2人目
@@ -285,6 +289,7 @@ def main():
         time.sleep(1.0)
         hi.execute()
         tc.tts_send_request("What's your name?")
+        tc.tts_send_request("Say your name after the beep sound.")
         #synthesis2("What's your name?")
         name_d = tc.get_person_name()
         #i = 0
@@ -307,7 +312,9 @@ def main():
         #synthesis2("Name is " + name_d)
         #synthesis2("Name is " + name)
         attribute_sentence = at.execute(res.result, res.environment_image)
-        tc.tts_send_request(attribute_sentence)
+        features = attribute_sentence.split("_")
+        for i in range(len(features)):
+            tc.tts_send_request(features[i])
         #synthesis2(attribute_sentence)
 
 
@@ -316,6 +323,8 @@ def main():
         time.sleep(1.0)
         hi.execute()
         tc.tts_send_request("What's your name?")
+        tc.tts_send_request("Say your name after the beep sound.")
+
         #synthesis2("What's your name?")
         name_d = tc.get_person_name()
         #i = 0
@@ -338,7 +347,9 @@ def main():
         #synthesis2("Name is " + name_d)
         #synthesis2("Name is " + name)
         attribute_sentence = at.execute(res.result, res.environment_image)
-        tc.tts_send_request(attribute_sentence)
+        features = attribute_sentence.split("_")
+        for i in range(len(features)):
+            tc.tts_send_request(features[i])
         #synthesis2(attribute_sentence)
 
         tc.tts_send_request("Fisish, find my mates.")
