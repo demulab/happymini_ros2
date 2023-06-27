@@ -7,9 +7,7 @@ import matplotlib.pyplot as plt
 import rclpy
 from rclpy.node import Node
 from happymini_msgs.msg import PointsAndImages
-from happymini_msgs.srv import NaviCoord
 from stand_in_line.detect_pose_mod import DetectPoseModule
-import geometry_msgs
 
 
 class StandInLineServer(Node):
@@ -48,8 +46,7 @@ class StandInLineServer(Node):
         between_dist_list = []
         person_coords = []
         # 3人未満だったら処理しない
-        min_person_num = 2
-        if len(coord_list) < min_person_num:
+        if len(coord_list) < 3:
             return False, None
         before_data = None
         # 人同士の距離を推定
@@ -74,7 +71,7 @@ class StandInLineServer(Node):
                 return False, None
             before_data = data
         # 人の距離値が2つ未満だったら処理しない
-        if len(between_dist_list) < min_person_num - 1:
+        if len(between_dist_list) < 2:
             return False, None
         # 2点を通る直線の傾きを比較
         before_data = None
@@ -86,11 +83,8 @@ class StandInLineServer(Node):
                 before_data = data
                 continue
             # 傾き計算
-            try:
-                inclination = (data.z-before_data.z)/(data.x-before_data.x)
-                inclination_list.append(inclination)
-            except ZeroDivisionError:
-                return False, None
+            inclination = (data.z-before_data.z)/(data.x-before_data.x)
+            inclination_list.append(inclination)
         # 傾きの分散
         average = sum(inclination_list)/len(inclination_list)
         tmp = 0
@@ -241,58 +235,32 @@ class StandInLineServer(Node):
             print('None Line')
             return None
         print('Stand in line')
-        # 顔があるかどうか判定
         got_face_list = self.got_face(self.person_info.images)
-        faces_rate = []
+        face_rate = []
         for got_face in got_face_list:
-            if got_face:
-                faces_rate.append(1)
-            else:
-                faces_rate.append(0)
-        # 顔があれば前向きの列
-        orientation = 'back_line'
-        if sum(faces_rate)/len(faces_rate) > 0.5:
-            orientation = 'front_line'
-        people_coord_dict = {}
-        # 座標がキーで深度が値
-        for num, data in enumerate(people_coord):
-            people_coord_dict[repr(data)] = [data.z]
-        # 深度が最大の座標、最小の座標を求める
-        front_coord = eval(min(people_coord_dict))
-        back_coord = eval(max(people_coord_dict))
-        result = front_coord
-        if orientation == 'front_line':
-            result = back_coord
-        return result
+            
+        #people_coord_dict = {}
+        ## 座標がキーで深度が値
+        #for data in people_coord:
+        #    people_coord_dict[data] = data.z
+        ## 深度が最大の座標、最小の座標を求める
+        #front_coord = min(people_coord_dict)
+        #back_coord = max(people_coord_dict)
+        #print(f"front: {front_coord}")
+        #print(f"back : {back_coord}")
+        #if orientation == 'front':
+        return None
 
 
 def main():
     rclpy.init()
     stand_line_node = StandInLineServer()
-    navi_coord = rclpy.create_node('navi_coord_client')
-    navi_coord_srv = navi_coord.create_client(NaviCoord, 'navi_coord_server')
     time.sleep(1.0)
     try:
         #rclpy.spin(stand_line_node)
-        cnt = 0
         while rclpy.ok():
-            print(cnt)
             rclpy.spin_once(stand_line_node, timeout_sec=0.1)
-            coordinate = stand_line_node.tmp_main()
-            if cnt > 50:
-                req = NaviCoord.Request()
-                req.coordinate = [coordinate.x, coordinate.y, 0.0, 1.0]
-                future = navi_coord_srv.call_async(req)
-                while not future.done() and rclpy.ok():
-                    rclpy.spin_once(navi_coord, timeout_sec=0.1)
-                if future.result() is not None:
-                    print(future.result().result)
-                else:
-                    print("Service call failed")
-            if coordinate:
-                cnt += 1
-            else:
-                cnt = 0
+            _ = stand_line_node.tmp_main()
     except KeyboardInterrupt:
         pass
     stand_line_node.destroy_node()

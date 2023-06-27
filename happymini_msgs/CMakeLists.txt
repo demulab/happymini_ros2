@@ -24,9 +24,11 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     "srv/WavPlay.srv"
     "srv/WavMake.srv"
     "srv/TrackPerson.srv"
+    "srv/NaviCoord.srv"
     "action/GraspBag.action"
     "msg/DetectionResult.msg"
     "msg/PointArray.msg"
+    "msg/PointsAndImages.msg"
     DEPENDENCIES sensor_msgs
     )
 

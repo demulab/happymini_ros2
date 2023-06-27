@@ -30,6 +30,7 @@ setup(
         'console_scripts': [
             'set_location = happymini_navigation.set_location:main',
             'navi_location = happymini_navigation.navi_location:main',
+            'navi_coord = happymini_navigation.navi_coord:main',
             'set_params = happymini_navigation.set_params:main'
         ],
     },

@@ -13,7 +13,7 @@ from tf2_ros import TransformBroadcaster
 
 from yolov5_ros2.detector import Detector, parse_opt
 
-from happymini_msgs.msg import PointArray
+from happymini_msgs.msg import PointsAndImages
 
 
 class ObjectDetection(Node):
@@ -41,11 +41,12 @@ class ObjectDetection(Node):
         self.ts.registerCallback(self.images_callback)
         self.broadcaster = TransformBroadcaster(self)
         # by kanazawa
-        self.coord_pub = self.create_publisher(PointArray, 'person_coordinates', 10)
+        self.coord_pub = self.create_publisher(PointsAndImages, 'detect_person', 10)
+        self.person_info = PointsAndImages()
         self.person_coord = Point()
-        self.coordinates = PointArray()
+        self.person_image = Image()
 
-    def generation_coord(self, msg_info, data):
+    def generation_coord(self, msg_info, data, image):
         u1 = round(data.u1)
         u2 = round(data.u2)
         v1 = round(data.v1)
@@ -53,7 +54,9 @@ class ObjectDetection(Node):
         u = round((data.u1 + data.u2) / 2)
         v = round((data.v1 + data.v2) / 2)
         depth = np.median(self.img_depth[v1:v2+1, u1:u2+1])
+        self.person_image = CvBridge().cv2_to_imgmsg(image[v1:v2+1, u1:u2+1])
         if depth != 0:
+            self.person_coord = Point()
             z = depth * 1e-3
             fx = msg_info.k[0]
             fy = msg_info.k[4]
@@ -67,6 +70,7 @@ class ObjectDetection(Node):
 
     def images_callback(self, msg_info, msg_color, msg_depth):
         try:
+            img = CvBridge().imgmsg_to_cv2(msg_color, 'bgr8')
             img_color = CvBridge().imgmsg_to_cv2(msg_color, 'bgr8')
             self.img_depth = CvBridge().imgmsg_to_cv2(msg_depth, 'passthrough')
         except CvBridgeError as e:
@@ -83,18 +87,23 @@ class ObjectDetection(Node):
         target = None
         max_num = 5
         person_list = []
+        # Personを抽出
         for r in result:
-            if len(person_list) > max_num:
+            if len(person_list) >= max_num:
                 break
             elif r.name == self.target_name:
                 person_list.append(r)
 
-        self.coordinates.points.clear()
+        self.person_info.points.clear()
+        self.person_info.images.clear()
         if person_list:
             for data in person_list:
-                self.generation_coord(msg_info, data)
-                self.coordinates.points.append(self.person_coord)
-        self.coord_pub.publish(self.coordinates)
+                self.generation_coord(msg_info, data, img)
+                if self.person_coord.z > 2.0:
+                    continue
+                self.person_info.points.append(self.person_coord)
+                self.person_info.images.append(self.person_image)
+        self.coord_pub.publish(self.person_info)
 
         self.img_depth *= 16
         if target is not None:
