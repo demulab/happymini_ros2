@@ -8,25 +8,25 @@ from geometry_msgs.msg import Twist
 # Module
 from happymini_manipulation.motor_controller import JointController
 # Custom msg
-from happymini_msgs.action import GraspBag
-from happymini_msgs.srv import NaviLocation, SpeechToText, WavPlay
+from happymini_msgs.action import GraspBag, StandInLine
+from happymini_msgs.srv import NaviLocation, SpeechToText, TextToSpeech
 
 
 class Speech(Node):
     def __init__(self):
         super().__init__('cml_speech')
         # Service
-        self.tts_srv = self.create_client(WavPlay, 'wav_play_server')
+        self.tts_srv = self.create_client(TextToSpeech, 'mimic3_play_server')
         self.stt_srv = self.create_client(SpeechToText, 'stt')
         while not self.tts_srv.wait_for_service() and not self.stt_srv.wait_for_service():
             self.get_logger().info("/tts and /stt is not here ...")
             rclpy.spin_once(self, timeout_sec=0.5)
-        self.tts_msg = WavPlay.Request()
+        self.tts_msg = TextToSpeech.Request()
         self.stt_msg = SpeechToText.Request()
 
-    def tts(self, file_name):
+    def tts(self, text):
         # msg
-        self.tts_msg.file = file_name
+        self.tts_msg.text = text
         # Request
         tts_srv_future = self.tts_srv.call_async(self.tts_msg)
         while not tts_srv_future.done() and rclpy.ok():
@@ -89,14 +89,14 @@ class DetectPose(smach.State):
                 tmp_time = time_count
 
     def execute(self, userdata):
-        speech.tts('/cml2023/start_cml')
+        speech.tts('Start carry my luggage.')
         time.sleep(0.5)
-        speech.tts('/cml2023/which_bag')
+        speech.tts('Which bag should I grasp?')
         self.get_pose()
         userdata.left_right_out = self.hand_pose
         if self.timeout_flg:
             return 'time_out'
-        speech.tts('/cml2023/ok')
+        speech.tts('Ok.')
         return 'detected'
 
 
@@ -139,21 +139,21 @@ class GraspBagState(smach.State):
         state = feedback_msg.feedback.state
         self.logger.info(state)
         if state == 'Estimating bag location ...':
-            speech.tts('/cml2023/estimate')
+            speech.tts('Estimating the location of the bag.')
         elif state == 'Approaching a bag':
-            speech.tts('/cml2023/approach')
+            speech.tts('Approaching a bag.')
         elif state == 'Re: Estimating bag location ...':
-            speech.tts('/cml2023/re_estimate')
+            speech.tts('Bag location being estimated again.')
         elif state == 'Grasp a bag':
-            speech.tts('/cml2023/grasp_bag')
+            speech.tts('Grasp a bag.')
         else:
             pass
 
     def execute(self, userdata):
         if userdata.left_right_in == 'left':
-            speech.tts('/cml2023/right_bag')
+            speech.tts('I will grasp the bag on the right as seen from you.')
         else:
-            speech.tts('/cml2023/left_bag')
+            speech.tts('I will grasp the bag on the left as seen from you.')
         self.logger.info(f"(left_right, <{userdata.left_right_in}>)")
         self.send_goal(userdata.left_right_in)
         while not self.result:
@@ -201,7 +201,7 @@ class Chaser(smach.State):
         self.chaser_check_flg = receive_msg.data
 
     def execute(self, userdata):
-        speech.tts('/cml2023/follow_you')
+        speech.tts("I will follow you.")
         self.chaser_msg.data = 'start'
         start_time = 0.0
         time_counter = 0.0
@@ -209,7 +209,7 @@ class Chaser(smach.State):
             rclpy.spin_once(self.node, timeout_sec=0.1)
             if self.sub_linear_x == 0.0 and self.chaser_check_flg and time_counter > 5.0:
                 self.logger.info("Is this the location of a car?")
-                speech.tts('/cml2023/car_question')
+                speech.tts('Is this the location of the car?')
                 self.logger.info("Doing /stt")
                 response = speech.stt(cmd='yes_no')
                 if response == 'yes':
@@ -243,9 +243,74 @@ class GiveBag(smach.State):
 
     def execute(self, userdata):
         self.arm.give()
-        speech.tts('/cml2023/give_bag')
+        speech.tts('Here you are.')
         time.sleep(5.0)
         self.arm.start_up()
+        return 'finished'
+
+
+class LineUp(smach.State):
+    def __init__(self, node):
+        smach.State.__ini__(
+                self,
+                outcomes=['finished'])
+        # Node
+        self.node = node
+        self.logger = node.get_logger()
+        # Client
+        self.navi = node.create_client(NaviLocation, 'navi_location_server')
+        while not self.navi.wait_for_service(timeout_sec=1.0) and rclpy.ok():
+            self.logger.info("/navi_location_server is not here ...")
+        self.req = NaviLocation.Request()
+        self.stand_in_line = ActionClient(self.node, StandInLine, 'stand_in_line_server')
+        # Value
+        self.result = None
+
+    def send_goal(self):
+        goal_msg = StandInLine.Goal()
+        goal_msg.tmp = ''
+        self.stand_in_line.wait_for_server()
+        self.send_goal_future = self.stand_in_line.send_goal_async(goal_msg, feedback_callback=self.feedback_callback)
+        self.send_goal_future.add_done_callback(self.goal_response_callback)
+
+    def goal_response_callback(self, future):
+        goal_handle = future.result()
+        if not goal_handle.accepted:
+            self.logger.error("Goal rejected")
+            return 'finished'
+        self.logger.info("Goal approved!")
+        self.get_result_future = goal_handle.get_result_async()
+        self.get_result_future.add_done_callback(self.get_result_callback)
+
+    def get_result_callback(self, future):
+        self.result = future.result().result.result
+        self.logger.info(f"Result: {self.result}")
+
+    def feedback_callback(self, feedback_msg):
+        state = feedback_msg.feedback.state
+        self.logger.info(state)
+
+    def do_navigation(self):
+        self.req.location_name = 'line_search'
+        future = self.navi.call_async(self.req)
+        while not future.done() and rclpy.ok():
+            rclpy.spin_once(self.node, timeout_sec=0.1)
+        if future.result() is not None:
+            navi_result = future.result().result
+            print(navi_result)
+        else:
+            self.logger.info("Service call failed")
+
+    def execute(self, userdata):
+        navi_result = self.do_navigation()
+        speech.tts("I will get in line.")
+        self.send_goal()
+        while not self.result:
+            rclpy.spin_once(self.node, timeout_sec=0.1)
+        if self.result:
+            speech.tts("I got in line.")
+        else:
+            speech.tts("Could not get in line.")
         return 'finished'
 
 
@@ -278,7 +343,7 @@ class Return(smach.State):
             self.logger.info(f"Service call failed")
 
     def execute(self, userdata):
-        speech.tts('/cml2023/return')
+        speech.tts('Return to start position.')
         navi_result = False
         counter = 1
         while not navi_result and rclpy.ok():
@@ -286,7 +351,7 @@ class Return(smach.State):
                 break
             navi_result = self.do_navigation()
             counter += 1
-        speech.tts('/cml2023/finish_cml')
+        speech.tts('Finish carry my luggage. Thank you very much.')
         return 'success'
 
 
@@ -316,6 +381,9 @@ class CarryMyLuggage(Node):
                     transitions={'stop':'GIVE_BAG'})
             smach.StateMachine.add(
                     'GIVE_BAG', GiveBag(self),
+                    transitions={'finished':'LINE_UP'})
+            smach.StateMachine.add(
+                    'LINE_UP', LineUp(self),
                     transitions={'finished':'RETURN'})
             smach.StateMachine.add(
                     'RETURN', Return(self),
