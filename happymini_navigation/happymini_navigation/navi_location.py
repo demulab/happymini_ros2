@@ -116,13 +116,13 @@ class WayPointNavi(Node):
             rclpy.spin_until_future_complete(self, future)
 
     def do_navigation(self, srv_req, srv_res):
-        self.navigation_flg = False
+        self.navigation_flg = None
         send_goal_flg = True
         location_coordinate = self.search_location_param(srv_req.location_name)
         if location_coordinate:
             goal = self.set_pose(location_coordinate)
             send_goal_flg = self.send_goal(goal)
-        while not self.navigation_flg and send_goal_flg and rclpy.ok():
+        while self.navigation_flg is None and rclpy.ok():
             rclpy.spin_once(self, timeout_sec=0.5)
         srv_res.result = self.navigation_flg and send_goal_flg
         self.get_logger().info(f"srv_res >>> {srv_res.result}")
