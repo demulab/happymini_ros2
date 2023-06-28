@@ -1,0 +1,8 @@
+# goal
+string tmp
+---
+# result
+bool result
+---
+# feedback
+string state

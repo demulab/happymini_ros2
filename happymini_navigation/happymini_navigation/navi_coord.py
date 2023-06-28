@@ -21,7 +21,7 @@ class CoordNavi(Node):
     def set_pose(self, goal_pose):
         pose = PoseStamped()
         pose.header.stamp = self.get_clock().now().to_msg()
-        pose.header.frame_id = "map"
+        pose.header.frame_id = "base_link"
         pose.pose.position.x = goal_pose[0]
         pose.pose.position.y = goal_pose[1]
         pose.pose.orientation.z = goal_pose[2]
@@ -53,9 +53,11 @@ class CoordNavi(Node):
         if future.result().status == GoalStatus.STATUS_SUCCEEDED:
             self.get_logger().info('Navigation success !')
             self.navigation_flg = True
-        elif future.result().status == GoalStatus.ABORTED:
+        elif future.result().status == GoalStatus.STATUS_ABORTED:
             self.get_logger().error('Navigation aborted')
             self.navigation_flg = False
+        else:
+            self.navigation_flg = None
 
     def feedback_callback(self, msg):
         self.feedback = msg.feedback
@@ -68,11 +70,11 @@ class CoordNavi(Node):
             rclpy.spin_until_future_complete(self, future)
 
     def do_navigation(self, srv_req, srv_res):
-        self.navigation_flg = False
+        self.navigation_flg = None
         send_goal_flg = True
         goal = self.set_pose(srv_req.coordinate)
         send_goal_flg = self.send_goal(goal)
-        while not self.navigation_flg and send_goal_flg and rclpy.ok():
+        while self.navigation_flg is None and rclpy.ok():
             rclpy.spin_once(self, timeout_sec=0.5)
         srv_res.result = self.navigation_flg and send_goal_flg
         self.get_logger().info(f"srv_res >>> {srv_res.result}")
@@ -81,7 +83,7 @@ class CoordNavi(Node):
 
 class NaviCoordServer(Node):
     def __init__(self):
-        super().__init__('navi_location_server')
+        super().__init__('navi_coord_server')
         # Node
         self.coord_navi = CoordNavi()
         # Service

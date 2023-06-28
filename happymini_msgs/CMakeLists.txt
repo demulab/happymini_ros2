@@ -26,6 +26,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     "srv/TrackPerson.srv"
     "srv/NaviCoord.srv"
     "action/GraspBag.action"
+    "action/StandInLine.action"
     "msg/DetectionResult.msg"
     "msg/PointArray.msg"
     "msg/PointsAndImages.msg"

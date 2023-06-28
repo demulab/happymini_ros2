@@ -1,3 +1,4 @@
+import sympy
 import math
 import time
 import cv2
@@ -6,21 +7,58 @@ import numpy
 import matplotlib.pyplot as plt
 import rclpy
 from rclpy.node import Node
+from rclpy.action import ActionServer
+from stand_in_line.detect_pose_mod import DetectPoseModule
+from tf_transformations import quaternion_from_euler
+import geometry_msgs
+from happymini_msgs.action import StandInLine
 from happymini_msgs.msg import PointsAndImages
 from happymini_msgs.srv import NaviCoord
-from stand_in_line.detect_pose_mod import DetectPoseModule
-import geometry_msgs
+from happymini_teleop.base_control import BaseControl
+
+
+class NaviCoordClient(Node):
+    def __init__(self):
+        super().__init__('navi_coord_client_node')
+        # Client
+        self.navi_coord = self.create_client(NaviCoord, 'navi_coord_server')
+        while not self.navi_coord.wait_for_service(timeout_sec=1.0) and rclpy.ok():
+            self.get_logger().info("navi_coord_server is not here ...")
+        self.navi_coord_req = NaviCoord.Request()
+
+    def request_send(self, coordinate):
+        self.navi_coord_req.coordinate = coordinate
+
+        future = self.navi_coord.call_async(self.navi_coord_req)
+        while not future.done() and rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.1)
+        if future.result() is not None:
+            return future.result().result
+        else:
+            self.get_logger().info("Service call failed")
+            return False
 
 
 class StandInLineServer(Node):
     def __init__(self):
         super().__init__('stand_in_line_node')
+        # Action
+        self.__action_server = ActionServer(self, StandInLine, 'stand_in_line_server', self.action_main)
+        # Client
+        self.navi_coord_client = NaviCoordClient()
         # Subscriber
         self.detect_sub = self.create_subscription(PointsAndImages, "detect_person", self.detection_callback, 10)
         # Module
         self.pose_mod = DetectPoseModule()
+        self.bc_node = BaseControl()
         # Value
         self.person_info = None
+        self.line_degree = None
+        self.orientation = None
+        self.line_eq = None
+        self.inclination = None
+
+        self.get_logger().info("Ready to set /stand_in_line_server")
 
     def detection_callback(self, receive_msg):
         self.person_info = receive_msg
@@ -54,6 +92,7 @@ class StandInLineServer(Node):
         before_data = None
         # 人同士の距離を推定
         for data in coord_list:
+            data.x = -1*data.x
             # 一人目の座標を格納
             if before_data is None:
                 before_data = data
@@ -80,6 +119,7 @@ class StandInLineServer(Node):
         before_data = None
         inclination = None
         inclination_list = []
+        person_point = 0  # 直線の式に使うだけ
         for data in coord_list:
             # 一人目の座標を格納
             if before_data is None:
@@ -100,87 +140,10 @@ class StandInLineServer(Node):
         # 閾値より分散が大きかったら列じゃない
         if dispersion > 0.05:
             return False, None
+        # 最後の２人の直線の傾きを度数法にして格納
+        self.line_degree = math.degrees(math.atan(inclination))
+        self.inclination = inclination
         return True, person_coords
-
-    def judg_from_pose(self, image_list):
-        images = []
-        orientation_list = []
-        # 率
-        side_rate = []
-        got_face_rate = []
-        back_rate = []
-        orientation_rate = []
-        try:
-            for img in image_list:
-                img = CvBridge().imgmsg_to_cv2(img)
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                images.append(img)
-        except CvBridgeError as e:
-            self.get_logger().warn(str(e))
-            return False, None
-        # ランドマーク検出
-        pose_list, got_face_list = self.pose_mod.detect(images=images)
-        before_orientation = 0
-        orientation = 0
-        for num, pose in enumerate(pose_list):
-            try:
-                face_sign = numpy.nan
-                shoulder_sign = numpy.nan
-                hip_sign = numpy.nan
-                face_orientation = 999.9
-                shoulder_orientation = 999.9
-                hip_orientation = 999.9
-                body_orientation = numpy.nan
-                upper_orientation = numpy.nan
-                # sign
-                face_sign = pose['left_ear'].x - pose['right_ear'].x
-                shoulder_sign = pose['left_shoulder'].x - pose['right_shoulder'].x
-                hip_sign = pose['left_hip'].x - pose['right_hip'].x
-                # orientation
-                face_orientation = pose['left_ear'].x/pose['right_ear'].x
-                shoulder_orientation = pose['left_shoulder'].x/pose['right_shoulder'].x
-                hip_orientation = pose['left_hip'].x/pose['right_hip'].x
-                # body (None face) or upper
-                body_orientation = (shoulder_orientation+hip_orientation)/2
-                upper_orientation = (face_orientation+shoulder_orientation+hip_orientation)/3
-            except KeyError as key:
-                pass
-            # 人の向きを推定
-            # 背中
-            if shoulder_sign < 0 and hip_sign < 0:
-                if before_orientation is None:
-                    before_orientation = 'back'
-                    orientation_list.append(before_orientation)
-                    continue
-                orientation = 'back'
-            # 正面
-            elif shoulder_sign > 0 and hip_sign > 0:
-                if before_orientation is None:
-                    before_orientation = 'front'
-                    orientation_list.append(before_orientation)
-                    continue
-                orientation = 'front'
-            # わからない
-            else:
-                if before_orientation is None:
-                    before_orientation = 'None'
-                    orientation_list.append(before_orientation)
-                    continue
-                orientation = 'None'
-            # 前の人と向きが同じか
-            if before_orientation == orientation:
-                orientation_rate.append(1)
-                before_orientation = orientation
-            else:
-                orientation_rate.append(0)
-            # 向きを格納
-            orientation_list.append(orientation)
-        if sum(orientation_rate)/len(orientation_rate) < 0.5:
-            return False, None
-        orientation_result = 'back'
-        if len(orientation_list.count('front'))/len(orientation_list) > 0.5:
-            orientation_result = 'front'
-        return True, orientation_result
     
     def got_face(self, image_list):
         images = []
@@ -198,7 +161,7 @@ class StandInLineServer(Node):
         except CvBridgeError as e:
             self.get_logger().warn(str(e))
             return None
-        # ランドマーク検出
+        # ランドマーク取得
         pose_list, got_face_list = self.pose_mod.detect(images=images)
         before_orientation = 0
         orientation = 0
@@ -227,32 +190,30 @@ class StandInLineServer(Node):
                 pass
         return got_face_list
 
-    def tmp_main(self):
+    def estimate_line(self):
         while not self.person_info and rclpy.ok():
             self.get_logger().warn("None topic from /detect_person ...")
             time.sleep(1.0)
         if self.person_info == PointsAndImages():
             return None
+        # depthから列があるか判定
         depth_flg, people_coord = self.judg_from_depth(self.person_info.points)
-        #pose_flg, orientation = self.judg_from_pose(self.person_info.images)
-        #if not (depth_flg and pose_flg):
-        #    return None
         if not depth_flg:
-            print('None Line')
             return None
-        print('Stand in line')
         # 顔があるかどうか判定
         got_face_list = self.got_face(self.person_info.images)
         faces_rate = []
+        if got_face_list is None:
+            return None
         for got_face in got_face_list:
             if got_face:
                 faces_rate.append(1)
             else:
                 faces_rate.append(0)
         # 顔があれば前向きの列
-        orientation = 'back_line'
+        self.orientation = 'back_line'
         if sum(faces_rate)/len(faces_rate) > 0.5:
-            orientation = 'front_line'
+            self.orientation = 'front_line'
         people_coord_dict = {}
         # 座標がキーで深度が値
         for num, data in enumerate(people_coord):
@@ -261,38 +222,61 @@ class StandInLineServer(Node):
         front_coord = eval(min(people_coord_dict))
         back_coord = eval(max(people_coord_dict))
         result = front_coord
-        if orientation == 'front_line':
+        if self.orientation == 'front_line':
             result = back_coord
+        self.get_logger().info(f"{self.orientation}")
         return result
 
+    def action_main(self, goal_handle):
+        cnt = 0
+        while rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.1)
+            # 端の人の座標をもってくる
+            coordinate = self.estimate_line()
+            if cnt > 50:
+                # 直線の式2つ目
+                line_x_param = 0.8
+                sympy.var("x, z")
+                if self.orientation == 'front_line':
+                    param_eq = sympy.Eq(x, coordinate.x-line_x_param)
+                    roll = 0.0
+                    pitch = 0.0
+                    yaw = math.radians(self.line_degree+90)
+                else:
+                    param_eq = sympy.Eq(x, coordinate.x+line_x_param)
+                    roll = 0.0
+                    pitch = 0.0
+                    yaw = -1*math.radians(self.line_degree)
+                # 直線の式を作成
+                line_eq = sympy.Eq(z-coordinate.z, self.inclination*(x-coordinate.x))
+                # 直線の式からゴールを算出
+                x_z_coord = sympy.solve([line_eq, param_eq], [x, z])
+                quaterion = quaternion_from_euler(roll, pitch, yaw, 'rxyz')
+                coordinate = [float(x_z_coord[z]), float(x_z_coord[x]), quaterion[2], quaterion[3]]
+                self.get_logger().info(f"{coordinate}")
+                # Navigation
+                navi_result = self.navi_coord_client.request_send(coordinate=coordinate)
+                # Response
+                goal_handle.succeed()
+                result = StandInLine.Result()
+                result.result = navi_result
+                self.get_logger().info(f"Result: {result}")
+                return result
+            if coordinate:
+                cnt += 1
+                # 端の人をみる
+                if abs(coordinate.x) > 0.5:
+                    self.get_logger().info(f"{math.degrees(math.atan2(coordinate.z, coordinate.x))}")
+                    #self.bc_node.rotate_angle(math.degrees(math.atan2(coordinate.z, coordinate.x)), 0, speed=0.3, time_out=10)
+            else:
+                cnt = 0
 
 def main():
     rclpy.init()
     stand_line_node = StandInLineServer()
-    navi_coord = rclpy.create_node('navi_coord_client')
-    navi_coord_srv = navi_coord.create_client(NaviCoord, 'navi_coord_server')
     time.sleep(1.0)
     try:
-        #rclpy.spin(stand_line_node)
-        cnt = 0
-        while rclpy.ok():
-            print(cnt)
-            rclpy.spin_once(stand_line_node, timeout_sec=0.1)
-            coordinate = stand_line_node.tmp_main()
-            if cnt > 50:
-                req = NaviCoord.Request()
-                req.coordinate = [coordinate.x, coordinate.y, 0.0, 1.0]
-                future = navi_coord_srv.call_async(req)
-                while not future.done() and rclpy.ok():
-                    rclpy.spin_once(navi_coord, timeout_sec=0.1)
-                if future.result() is not None:
-                    print(future.result().result)
-                else:
-                    print("Service call failed")
-            if coordinate:
-                cnt += 1
-            else:
-                cnt = 0
+        rclpy.spin(stand_line_node)
     except KeyboardInterrupt:
         pass
     stand_line_node.destroy_node()

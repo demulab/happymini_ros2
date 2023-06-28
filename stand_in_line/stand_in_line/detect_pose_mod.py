@@ -68,6 +68,7 @@ class DetectPoseModule():
                     got_face_list.append(False)
                 pose_result_list.append(landmark_dict)
                 #print(landmark_dict)
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
                 cv2.imshow(f'Image {num}', image)
                 cv2.waitKey(1)
         return pose_result_list, got_face_list
