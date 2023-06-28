@@ -37,8 +37,9 @@ class EmptySeatFinder(Node):
         )
 
         self.is_tracked = False
-        self.angle = 0
-        
+        self.angle = 0.0
+        self.cnt = 0
+
     def image_callback(self, msg):
         try:
             self.img = self.bridge.imgmsg_to_cv2(msg, "bgr8")
@@ -52,7 +53,7 @@ class EmptySeatFinder(Node):
         return float(x*y)/float(w*h)
 
     def trackPerson(self, request : TrackPerson.Request, response: TrackPerson.Response) -> TrackPerson.Response:
-
+        response.angle = 0.0
         new_img = self.img.copy()
         img, result = self.detector.detect(new_img)
         cv2.imwrite("/home/demulab/test_data/detect.png", img)
@@ -119,11 +120,12 @@ class EmptySeatFinder(Node):
                 self.is_tracked = False
                 response.angle = self.angle
         self.angle = response.angle
+
         return response
 
     
     def detectEmptyChair(self, request : DetectEmptyChair.Request, response : DetectEmptyChair.Response) -> DetectEmptyChair.Response:
-
+        self.cnt += 1
         new_img = self.img.copy()
         img, result = self.detector.detect(new_img)
         cv2.imwrite("/home/demulab/test_data/detect.png", img)
@@ -174,11 +176,30 @@ class EmptySeatFinder(Node):
             else:
                 empty_seats.append(i)
 
-        #calculate yaw angle 
-        for i in range(len(empty_seats)):
-            yaw = self.calculateYawAngle(chair[empty_seats[i]], img_w, 180)
-            response.angles.append(yaw)
+        max_area = 0
+        max_idx =0
 
+        for i in range(len(chair)):
+            chair_h = chair[empty_seats[i]]["v2"] - chair[empty_seats[i]]["v1"]
+            chair_w = chair[empty_seats[i]]["u2"] - chair[empty_seats[i]]["u1"]
+            area = chair_h * chair_w
+            if max_area < area:
+                max_area = area
+                max_idx = i
+
+        #calculate yaw angle 
+        #for i in range(len(empty_seats)):
+        #    yaw = self.calculateYawAngle(chair[empty_seats[i]], img_w, 180)
+        #    response.angles.append(yaw)
+
+
+        report_img = self.img.copy()
+        if len(empty_seats) >0: 
+            yaw = self.calculateYawAngle(chair[empty_seats[max_idx]], img_w, 180)
+            response.angles.append(yaw)
+            print(chair[empty_seats[max_idx]])
+            cv2.rectangle(report_img, (chair[empty_seats[max_idx]]["u1"], chair[empty_seats[max_idx]]["v1"]), (chair[empty_seats[max_idx]]["u2"], chair[empty_seats[max_idx]]["v2"]), (0,255,0), 3)
+            cv2.imwrite(f"/home/demulab/test_data/recp_chair{self.cnt}.png", report_img)
         return response
 
         

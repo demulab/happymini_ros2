@@ -21,6 +21,11 @@ from happymini_msgs.action import GraspBag
 from happymini_msgs.srv import NaviLocation, TextToSpeech, SpeechToText, WavPlay, NameDetect, DetectEmptyChair, AttributeRecognition, DetectPerson, TrackPerson
 
 
+name_list = []
+fav_drink_list =[]
+feature_list = []
+is_second = False
+
 def synthesis2(text = None):
     # 音声合成を行うことをloggerで表示します．
     print(f'音声合成を実行します')
@@ -229,9 +234,13 @@ class GetInfo(smach.State):
 
     def execute(self, userdata):
         name_flg = False
+        global name_list
+        global fav_drink_list
+        global feature_list
         while not name_flg:
             #synthesis2('What is your name?')
             _ = self.node.tts('What is your name?')
+            _ = self.node.tts('"Say your name after the beep sound."')
             # Name detect
             name = self.stt_send_request()
             name = name.replace(" ","").replace(".","")
@@ -245,6 +254,8 @@ class GetInfo(smach.State):
                 #synthesis2('Sorry. I did not catch that. Plrease try again.')
                 continue
             print(drink)
+            name_list.append(name_d)
+            fav_drink_list.append(drink)
         _ = self.node.tts('Hi, ' + name_d)
         # PersonDetector
         self.__pd_req = DetectPerson.Request()
@@ -267,6 +278,7 @@ class GetInfo(smach.State):
         print("Start attribute_recog")
         attribute_sentence = ar_node.execute(img_response.result, img_response.environment_image) 
         print(attribute_sentence)
+        feature_list.append(attribute_sentence)
         #print("Start AttributeRecognition")
         #self.__ar_req = AttributeRecognition.Request()
         #self.__ar_req.input = img_response.result
@@ -323,14 +335,21 @@ class SayInfo(smach.State):
         self.logger = node.get_logger()
 
     def execute(self, userdata):
+        global is_second
+        global name_list
+        global feature_list
         _ = self.node.tts('Name is ' + userdata.name_in)
         #synthesis2('Name is ' + userdata.name_in)
         time.sleep(1.0)
         _ = self.node.tts(userdata.name_in + "'s favorite drink is " + userdata.drink_in)
         #synthesis2('Drink is ' + userdata.drink_in)
         time.sleep(1.0)
-        _ = self.node.tts(userdata.feature_in)
+        if is_second:
+            first_sentence = f"Hey {name_list[0]}, I want to introduce {name_list[1]}."
+            _ = self.node.tts(first_sentence)
+            _ = self.node.tts(feature_list[1])
         #synthesis2(userdata.feature_in)
+        is_second = True
         return 'success'
 
 
@@ -367,12 +386,14 @@ class GuideToSeat(smach.State):
         else:
             self.get_logger().info('サービスが応答しませんでした。')
         # 向く
-        self.bc_node.rotate_angle(-1*result.angles[0])
+        if len(result.angles) > 0:
+            self.bc_node.rotate_angle(-1*result.angles[0])
         # しゃべる
-        _ = self.node.tts('Please sit in the chair in the direction I am facing.')
+        _ = self.node.tts('Please sit in the chair in the direction I am facing now. Please wait until I turn around.')
         #synthesis2('Please sit in the chair in the direction I am facing.')
         # tracking
         self.bc_node.rotate_angle(180, precision=0, speed=0.5, time_out=10)
+        _ = self.node.tts("Please sit in the chair.")
         time.sleep(1.0)
         start_time = time.time()
 

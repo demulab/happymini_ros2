@@ -20,7 +20,7 @@ def generate_launch_description():
             default=os.path.join(
                 get_package_share_directory('happymini_navigation'),
                 'maps',
-                'demulab_230604.yaml'))
+                'fmm_map_3.yaml'))
 
     # location yaml path
     location_dir = LaunchConfiguration(
@@ -28,7 +28,7 @@ def generate_launch_description():
             default=os.path.join(
                 get_package_share_directory('happymini_navigation'), 
                 'location',
-                'receptionist_230614.yaml'))
+                'fmm_map_3.yaml'))
 
     return LaunchDescription([
         DeclareLaunchArgument(
