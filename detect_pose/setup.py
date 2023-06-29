@@ -20,7 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'detect_left_right = detect_pose.detect_left_right:main'
+            'detect_left_right = detect_pose.detect_left_right:main',
+            'detect_left_right_frontperson = detect_pose.detect_left_right_frontperson:main'
         ],
     },
 )

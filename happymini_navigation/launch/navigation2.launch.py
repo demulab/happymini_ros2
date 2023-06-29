@@ -51,6 +51,11 @@ def generate_launch_description():
 
         Node(
             package='happymini_navigation',
+            executable='navi_coord',
+            output='screen'),
+
+        Node(
+            package='happymini_navigation',
             executable='navi_location',
             arguments=[location_dir],
             output='screen',

@@ -86,6 +86,7 @@ class ObjectDetection(Node):
 
         target = None
         max_num = 5
+        max_depth = 3.0
         person_list = []
         # Personを抽出
         for r in result:
@@ -99,7 +100,8 @@ class ObjectDetection(Node):
         if person_list:
             for data in person_list:
                 self.generation_coord(msg_info, data, img)
-                if self.person_coord.z > 2.0:
+                # 深度が一定以上だったら除外
+                if self.person_coord.z >= max_depth:
                     continue
                 self.person_info.points.append(self.person_coord)
                 self.person_info.images.append(self.person_image)

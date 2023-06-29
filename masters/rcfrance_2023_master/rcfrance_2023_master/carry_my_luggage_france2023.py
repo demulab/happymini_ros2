@@ -6,6 +6,7 @@ import smach
 from std_msgs.msg import String, Bool
 from geometry_msgs.msg import Twist
 # Module
+from happymini_teleop.base_control import BaseControl
 from happymini_manipulation.motor_controller import JointController
 # Custom msg
 from happymini_msgs.action import GraspBag, StandInLine
@@ -92,6 +93,7 @@ class DetectPose(smach.State):
         speech.tts('Start carry my luggage.')
         time.sleep(0.5)
         speech.tts('Which bag should I grasp?')
+        time.sleep(3.0)
         self.get_pose()
         userdata.left_right_out = self.hand_pose
         if self.timeout_flg:
@@ -214,6 +216,10 @@ class Chaser(smach.State):
                 response = speech.stt(cmd='yes_no')
                 if response == 'yes':
                     break
+                elif response == 'no':
+                    speech.tts("Ok, continue to follow.")
+                else:
+                    pass
                 self.logger.info(f"{response}")
             elif self.sub_linear_x == 0.0 and start_time != 0.0:
                 time_counter = time.time() - start_time
@@ -251,7 +257,7 @@ class GiveBag(smach.State):
 
 class LineUp(smach.State):
     def __init__(self, node):
-        smach.State.__ini__(
+        smach.State.__init__(
                 self,
                 outcomes=['finished'])
         # Node
@@ -263,6 +269,9 @@ class LineUp(smach.State):
             self.logger.info("/navi_location_server is not here ...")
         self.req = NaviLocation.Request()
         self.stand_in_line = ActionClient(self.node, StandInLine, 'stand_in_line_server')
+        # Module
+        self.arm = JointController()
+        self.bc_node = BaseControl()
         # Value
         self.result = None
 
@@ -289,6 +298,14 @@ class LineUp(smach.State):
     def feedback_callback(self, feedback_msg):
         state = feedback_msg.feedback.state
         self.logger.info(state)
+        if state == "Start line detection":
+            speech.tts(state)
+        elif state == "Line up":
+            speech.tts("I will get in line.")
+        elif state == "wait in line":
+            speech.tts("I got in line. I will stand by.")
+        else:
+            pass
 
     def do_navigation(self):
         self.req.location_name = 'line_search'
@@ -302,15 +319,19 @@ class LineUp(smach.State):
             self.logger.info("Service call failed")
 
     def execute(self, userdata):
+        self.bc_node.rotate_angle(-100, 0, 0.3, time_out=10)
         navi_result = self.do_navigation()
         speech.tts("I will get in line.")
+        time.sleep(0.5)
+        self.arm.neck_up()
         self.send_goal()
-        while not self.result:
+        while self.result is None:
             rclpy.spin_once(self.node, timeout_sec=0.1)
         if self.result:
-            speech.tts("I got in line.")
+            speech.tts("The line is gone.")
         else:
             speech.tts("Could not get in line.")
+        self.arm.start_up()
         return 'finished'
 
 

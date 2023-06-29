@@ -93,9 +93,13 @@ class JointController(Node):
         self.joint_angle_list = [0.6, -89.2, 30.4, 59.2, 10]
         self.publish_joint(self.joint_angle_list)
 
+    def neck_up(self):
+        self.joint_angle_list = [20, -89.2, 30.4, 59.2, -40]
+        self.publish_joint(self.joint_angle_list)
+
     def start_up(self):
         #self.joint_angle_list = [90, -90, 90, 0.0, -90]  # Edu
-        self.joint_angle_list = [20, -89.2, 30.4, 59.2, -40]
+        self.joint_angle_list = [0.6, -89.2, 30.4, 59.2, -40]
         self.publish_joint(self.joint_angle_list)
 
     
@@ -106,6 +110,7 @@ def main():
     jc_node = JointController()
     
     jc_node.start_up()
+    #jc_node.neck_up()
     #jc_node.manipulation([0.25, 0.4])
     #jc_node.gripper(True)
     #jc_node.carry()

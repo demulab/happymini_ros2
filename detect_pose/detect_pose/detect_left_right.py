@@ -1,11 +1,19 @@
 import rclpy
 from rclpy.node import Node
 import cv2
+from cv_bridge import CvBridge, CvBridgeError
 import mediapipe as mp
 from std_msgs.msg import String
+from sensor_msgs.msg import Image
+from rclpy.qos import qos_profile_sensor_data
+from sensor_msgs.msg import Image, CameraInfo
+from geometry_msgs.msg import TransformStamped, Point
+from rclpy.utilities import remove_ros_args
+from message_filters import Subscriber, ApproximateTimeSynchronizer
+from tf2_ros import TransformBroadcaster
 #from std_msgs.msg import Image
-import logging
-import pyrealsense2 as rs
+#import logging
+#import pyrealsense2 as rs
 import numpy as np
 
 
@@ -26,20 +34,29 @@ class HandPosePublish(Node):
         super().__init__('detect_left_right')
         self.pub = self.create_publisher(String, 'hand', 10)  
         self.way = self.create_publisher(String, '/way', 10)
-        self.timer = self.create_timer(0.05, self.timer_callback)
+        #self.timer = self.create_timer(0.05, self.timer_callback)
         # pipe
-        self.pipeline = rs.pipeline()
-        self.config = rs.config()
-        self.config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8,30)
-        self.pipeline.start(self.config)
+        #self.pipeline = rs.pipeline()
+        #self.config = rs.config()
+        #self.config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8,30)
+        #self.pipeline.start(self.config)
         # realsense
-        #self.subscription = self.create_subscription(
-        #        Image,
-        #        'image_raw',
-        #        self.image_callback,
-        #        qos_profile_sensor_data)
+        self.sub_info = Subscriber(
+            self, CameraInfo, 'camera/aligned_depth_to_color/camera_info')
+        self.sub_color = Subscriber(
+            self, Image, 'camera/color/image_raw')
+        self.sub_depth = Subscriber(
+            self, Image, 'camera/aligned_depth_to_color/image_raw')
+        self.ts = ApproximateTimeSynchronizer(
+            [self.sub_info, self.sub_color, self.sub_depth], 10, 0.1)
+        self.ts.registerCallback(self.image_callback)
+        self.broadcaster = TransformBroadcaster(self)
   
-    def timer_callback(self):
+    def image_callback(self, msg_info, msg_color, msg_depth):
+        try:
+            img = CvBridge().imgmsg_to_cv2(msg_color, 'bgr8')
+        except CvBridgeError as e:
+            self.get_logger().info(str(e))
         msg = String()
         msg.data = f'shoulder_right: x=%f, y=%f, z=%f, shoulder_left: x=%f, y=%f, z=%f, hand_right: x=%f, y=%f, z=%f, hand_left: x=%f, y=%f, z=%f'
         
@@ -52,10 +69,9 @@ class HandPosePublish(Node):
         hand_left = None
         image = None
   
-        frames = self.pipeline.wait_for_frames()
-        color_frame = frames.get_color_frame()
-        if color_frame:
-          image = np.asanyarray(color_frame.get_data())
+        color_frame = img
+        if color_frame.any():
+          image = np.asanyarray(color_frame)
           #self.get_logger().info(f'{image}')
           image.flags.writeable = False
           #image = cv2.cvtColor(image, cv2.COLOE_RGB2BGR)

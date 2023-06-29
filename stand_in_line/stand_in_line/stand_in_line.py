@@ -64,6 +64,19 @@ class StandInLineServer(Node):
         self.person_info = receive_msg
         #self.image_and_coord_show(self.person_info)
 
+    def get_min_coord(self, coord_list):
+        people_coord_dict = {}
+        # 座標がキーで深度が値
+        for num, data in enumerate(coord_list.points):
+            people_coord_dict[repr(data)] = [data.z]
+        # 深度が最大の座標、最小の座標を求める
+        try:
+            min_coord = eval(min(people_coord_dict))
+        except ValueError:
+            return None
+        #max_coord = eval(max(people_coord_dict))
+        return min_coord
+
     def image_and_coord_show(self, person_info):
         # images
         for num, img in enumerate(person_info.images):
@@ -205,15 +218,17 @@ class StandInLineServer(Node):
         faces_rate = []
         if got_face_list is None:
             return None
+        self.orientation = 'back_line'
         for got_face in got_face_list:
             if got_face:
+                self.orientation = 'front_line'  # 一回でも顔が認識されたらfront_line
                 faces_rate.append(1)
             else:
                 faces_rate.append(0)
         # 顔があれば前向きの列
-        self.orientation = 'back_line'
-        if sum(faces_rate)/len(faces_rate) > 0.5:
-            self.orientation = 'front_line'
+        #self.orientation = 'back_line'
+        #if sum(faces_rate)/len(faces_rate) > 0.5:
+        #    self.orientation = 'front_line'
         people_coord_dict = {}
         # 座標がキーで深度が値
         for num, data in enumerate(people_coord):
@@ -227,15 +242,87 @@ class StandInLineServer(Node):
         self.get_logger().info(f"{self.orientation}")
         return result
 
-    def action_main(self, goal_handle):
+    def wait_in_line(self):
+        max_dist = 2.0
         cnt = 0
+        before_min_coord = None
+        find_flg = False
         while rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.1)
+            min_coord = self.get_min_coord(self.person_info)
+            # before_min_coordがなかったらmin_coordを代入
+            if before_min_coord is None:
+                before_min_coord = min_coord
+            # 
+            if not min_coord and cnt < 50 and not find_flg:
+                sub_cnt = 0
+                search_range = 50
+                while sub_cnt < 1 and not find_flg:
+                    rclpy.spin_once(self, timeout_sec=0.1)
+                    if min_coord:
+                        find_flg = True
+                        break
+                    self.bc_node.rotate_angle(search_range, 0, speed=0.3, time_out=10)
+                    rclpy.spin_once(self, timeout_sec=2.0)
+                    if min_coord:
+                        find_flg = True
+                        break
+                    self.bc_node.rotate_angle(-1*search_range*2, 0, speed=0.3, time_out=10)
+                    rclpy.spin_once(self, timeout_sec=2.0)
+                    if min_coord:
+                        find_flg = True
+                        break
+                    self.bc_node.rotate_angle(search_range)
+                    rclpy.spin_once(self, timeout_sec=2.0)
+                    if min_coord:
+                        find_flg = True
+                        break
+                    sub_cnt += 1
+                    print('wait')
+            # ROS2の座標に合わせる
+            if not min_coord:
+                return False
+            min_coord.x = -1*min_coord.x
+            if min_coord.z >= max_dist or not min_coord:
+                break
+            # 列が前に進んだら続く
+            if before_min_coord.z < min_coord.z and min_coord.z < max_dist and cnt > 20:
+                self.bc_node.rotate_angle(math.degrees(math.atan2(min_coord.x, min_coord.z)), 0, speed=0.3, time_out=10)
+                self.bc_node.translate_dist(min_coord.z - before_min_coord.z - 0.1, speed=0.2)
+                before_min_coord = min_coord
+                cnt = 0
+            cnt += 1
+        return True
+
+    def action_main(self, goal_handle):
+        feedback_msg = StandInLine.Feedback()
+        feedback_msg.state = "Start line detection"
+        goal_handle.publish_feedback(feedback_msg)
+        cnt = 0
+        sum_cnt = 0
+        before_coordinate = None
+        while rclpy.ok():
+            time.sleep(0.01)
             rclpy.spin_once(self, timeout_sec=0.1)
             # 端の人の座標をもってくる
             coordinate = self.estimate_line()
-            if cnt > 50:
+            if sum_cnt > 60:
+                self.get_logger().info("None person")
+                # Response
+                goal_handle.succeed()
+                result = StandInLine.Result()
+                result.result = False
+                self.get_logger().info(f"Result: {result}")
+                return result
+            # before_coordinateがなければcoordinateを代入
+            if before_coordinate is None:
+                before_coordinate = coordinate
+                continue
+            if cnt > 30:
+                feedback_msg.state = "Line up"
+                goal_handle.publish_feedback(feedback_msg)
                 # 直線の式2つ目
-                line_x_param = 0.8
+                line_x_param = 0.9
                 sympy.var("x, z")
                 if self.orientation == 'front_line':
                     param_eq = sympy.Eq(x, coordinate.x-line_x_param)
@@ -243,6 +330,7 @@ class StandInLineServer(Node):
                     pitch = 0.0
                     yaw = math.radians(self.line_degree+90)
                 else:
+                    line_x_param = line_x_param - 0.2
                     param_eq = sympy.Eq(x, coordinate.x+line_x_param)
                     roll = 0.0
                     pitch = 0.0
@@ -256,6 +344,14 @@ class StandInLineServer(Node):
                 self.get_logger().info(f"{coordinate}")
                 # Navigation
                 navi_result = self.navi_coord_client.request_send(coordinate=coordinate)
+                # 人の方を向く
+                if navi_result:
+                    min_coord = self.get_min_coord(self.person_info)
+                    self.bc_node.rotate_angle(math.degrees(math.atan2(-1*min_coord.x, min_coord.z)), 0, speed=0.3, time_out=10)
+                    # 人を待つ
+                    feedback_msg.state = "wait in line"
+                    goal_handle.publish_feedback(feedback_msg)
+                    _ = self.wait_in_line()
                 # Response
                 goal_handle.succeed()
                 result = StandInLine.Result()
@@ -265,11 +361,13 @@ class StandInLineServer(Node):
             if coordinate:
                 cnt += 1
                 # 端の人をみる
-                if abs(coordinate.x) > 0.5:
-                    self.get_logger().info(f"{math.degrees(math.atan2(coordinate.z, coordinate.x))}")
-                    #self.bc_node.rotate_angle(math.degrees(math.atan2(coordinate.z, coordinate.x)), 0, speed=0.3, time_out=10)
+                if abs(coordinate.x) > 0.3 and abs(before_coordinate.z - coordinate.z) > 0.4:
+                    self.get_logger().info(f"{math.degrees(math.atan2(coordinate.x, coordinate.z))}")
+                    self.bc_node.rotate_angle(math.degrees(math.atan2(coordinate.x, coordinate.z)), 0, speed=0.3, time_out=10)
+                    before_coordinate = coordinate
             else:
                 cnt = 0
+            sum_cnt += 1
 
 def main():
     rclpy.init()
