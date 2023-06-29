@@ -33,37 +33,75 @@ class UniqueAttributeRecognizer:
 
     def recognizeClothColor(self, image :np.ndarray) -> str:
 
-        lower = ["shorts", "leg", "jeans"]
+        lower = ["shorts", "jeans", "skirt", "trouser", "leg"]
+        #shoe, sandal, boot
+        whole = ["suits", "dress"]
+        shoe = ["sandal", "boot", "shoe"]
+
+        lower_blacklist = ["leg"]
+        shoe_nocolorlist = ["sandal"]
+
+
+
         pil_img = PILImage.fromarray(image).convert("RGB")
 
         lower_bb = []
-        shoe_bb = []        
+        lower_idx = -1
+        shoe_bb = []
+        shoe_idx = -1        
         tops_bb = []
+        whole_bb = []
+        whole_idx = -1
 
         for i in range(len(lower)):
             boxes, logits, phrases = self.lang_sam.predict_dino(pil_img, lower[i], 0.5, 0.25)
             if len(boxes.numpy()) > 0:
                 lower_bb = np.int16(boxes.numpy())
+                x1 = lower_bb[0][0]
+                y1 = lower_bb[0][1]
+                x2 = lower_bb[0][2]
+                y2 = lower_bb[0][3]
+
+                img_area = image.shape[0] * image.shape[1]
+                area = (x2-x1) * (y2-y1)
+                area_r = float(area/img_area)
+                if area_r > 0.7:
+                    lower_bb = []
+                    continue
+
                 tops_bb = [0, 0, image.shape[1]- 1, lower_bb[0][1]] 
+                lower_idx = i
                 break
-        
-        shoe_boxes, logits, phrases = self.lang_sam.predict_dino(pil_img, "shoe", 0.5, 0.25)
-        if len(shoe_boxes.numpy()) > 0:
-            shoe_bb = np.uint16(shoe_boxes.numpy())
+        """
+        for i in range(len(whole)):
+            boxes, logits, phrases = self.lang_sam.predict_dino(pil_img, whole[i], 0.5, 0.25)          
+            if len(boxes.numpy()) > 0:
+                whole_bb = np.int16(boxes.numpy())
+                whole_idx = i
+                break  
+        """
+        for i in range(len(shoe)):
+            boxes, logits, phrases = self.lang_sam.predict_dino(pil_img, shoe[i], 0.5, 0.25)          
+            if len(boxes.numpy()) > 0:
+                shoe_bb = np.int16(boxes.numpy())
+                shoe_idx = i
+                break  
 
-
+        #shoe_boxes, logits, phrases = self.lang_sam.predict_dino(pil_img, "shoe", 0.5, 0.25)
+        #if len(shoe_boxes.numpy()) > 0:
+        #    shoe_bb = np.uint16(shoe_boxes.numpy())
 
         lower_color = ""
         shoe_color = ""
+        tops_color = ""
 
         for i in range(len(lower_bb)):
             x1 = lower_bb[i][0]
             y1 = lower_bb[i][1]
             x2 = lower_bb[i][2]
             y2 = lower_bb[i][3]
-
             target_img = image[y1:y2, x1:x2]
-
+            cv2.imwrite(f"/home/demulab/test_data/{lower[lower_idx]}.png", target_img)
             color_row = np.median(target_img, axis=0)
             color = np.median(color_row, axis=0)
             lower_color = self.findNearestColor(color[2], color[1], color[0])
@@ -76,9 +114,20 @@ class UniqueAttributeRecognizer:
 
             target_img = image[y1:y2, x1:x2]
 
+            cv2.imwrite(f"/home/demulab/test_data/{shoe[shoe_idx]}.png", target_img)
             color_row = np.median(target_img, axis=0)
             color = np.median(color_row, axis=0)
             shoe_color = self.findNearestColor(color[2], color[1], color[0])
+
+        if len(whole_bb) > 0:
+            x1 = whole_bb[0][0]
+            y1 = whole_bb[0][1]
+            x2 = whole_bb[0][2]
+            y2 = whole_bb[0][3]
+
+            target_img = image[y1:y2, x1:x2]
+            cv2.imwrite(f"/home/demulab/test_data/{whole[whole_idx]}.png", target_img)
+
 
         if len(lower_bb) > 0:
             x1 = tops_bb[0]
@@ -93,9 +142,30 @@ class UniqueAttributeRecognizer:
             tops_color = self.findNearestColor(color[2], color[1], color[0])
 
 
-        color_info = {"bottoms" : lower_color, "shoe" : shoe_color, "tops" : tops_color}
+        lower_name = "bottoms"
+        shoe_name = "shoe"
+        whole_name = ""
 
-        return color_info
+
+        if lower_idx >= 0:
+            lower_name = lower[lower_idx]
+            if lower_name in lower_blacklist:
+                lower_name = "bottoms"
+        if shoe_idx >= 0:
+            shoe_name = shoe[shoe_idx]
+            if shoe_name in shoe_nocolorlist:
+                shoe_color = ""
+
+        if whole_idx >= 0 and lower_name == "bottoms":
+            whole_name = whole[whole_idx]
+            lower_color = ""
+            lower_name = ""
+
+        color_info = {"bottoms" : lower_color, "shoe" : shoe_color}
+        cloth_info = {"bottoms" : lower_name, "shoe" : shoe_name, "whole" : whole_name}
+        wear_info = {"color" : color_info, "cloth" : cloth_info}
+
+        return wear_info
         
 
     def findNearestColor(self, r, g, b):
@@ -149,12 +219,12 @@ class UniqueAttributeRecognizer:
         generated_ids = self.model.generate(pixel_values=pixel_values, max_length=50)
         generated_caption = self.processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
 
-        color_info = self.recognizeClothColor(image)
+        cloth_info = self.recognizeClothColor(image)
         #generated_caption = ""
-        sentence = self.attributesToSentence(generated_caption, demographics, color_info)
+        sentence = self.attributesToSentence(generated_caption, demographics, cloth_info)
         return sentence
 
-    def attributesToSentence(self, description : str, demographics : dict, color_info  :dict) -> str:
+    def attributesToSentence(self, description : str, demographics : dict, cloth_info  :dict) -> str:
         """
         convert dict attributes information to natural sentence.
         Returns:
@@ -211,8 +281,15 @@ class UniqueAttributeRecognizer:
             race_sentence = "{0} is {1}.".format(pron, demographics["dominant_race"])
         
         color_sentence = ""
+
+        color_info = cloth_info["color"]
+
         if color_info["shoe"] is not "" or color_info["bottoms"] is not "":
-            color_sentence = "{0} is wearing a {1} shoe and a {2} bottoms.".format(pron, color_info["shoe"], color_info["bottoms"])
+            color_sentence = "{0} is wearing a {1} {2} and a {3} {4}.".format(pron, color_info["shoe"], cloth_info["cloth"]["shoe"], color_info["bottoms"], cloth_info["cloth"]["bottoms"])
+
+        if cloth_info["cloth"]["whole"] is not "":
+            color_sentence = "{0} wears a {1} and a {2} {3}.".format(pron, cloth_info["cloth"]["whole"], color_info["shoe"], cloth_info["cloth"]["shoe"])
+
 
         return "{0}_{1}_{2}_{3}_{4}".format(description, gender_sentence, age_sentence, race_sentence, color_sentence)
 
