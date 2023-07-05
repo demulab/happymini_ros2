@@ -323,15 +323,29 @@ class StandInLineServer(Node):
                 goal_handle.publish_feedback(feedback_msg)
                 # 直線の式2つ目
                 line_x_param = 0.9
+                line_z_param = 1.1
                 sympy.var("x, z")
+                # 元のコード
+                #if self.orientation == 'front_line':
+                #    param_eq = sympy.Eq(x, coordinate.x-line_x_param)
+                #    roll = 0.0
+                #    pitch = 0.0
+                #    yaw = math.radians(self.line_degree+90)
+                #else:
+                #    line_x_param = line_x_param - 0.2
+                #    param_eq = sympy.Eq(x, coordinate.x+line_x_param)
+                #    roll = 0.0
+                #    pitch = 0.0
+                #    yaw = -1*math.radians(self.line_degree)
+                # 改良版コード
                 if self.orientation == 'front_line':
-                    param_eq = sympy.Eq(x, coordinate.x-line_x_param)
+                    param_eq = sympy.Eq(z, coordinate.z+line_z_param)
                     roll = 0.0
                     pitch = 0.0
                     yaw = math.radians(self.line_degree+90)
                 else:
-                    line_x_param = line_x_param - 0.2
-                    param_eq = sympy.Eq(x, coordinate.x+line_x_param)
+                    line_z_param = line_z_param + 1.0
+                    param_eq = sympy.Eq(z, coordinate.z-line_z_param)
                     roll = 0.0
                     pitch = 0.0
                     yaw = -1*math.radians(self.line_degree)

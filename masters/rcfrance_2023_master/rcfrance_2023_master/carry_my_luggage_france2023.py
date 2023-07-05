@@ -332,6 +332,7 @@ class LineUp(smach.State):
         else:
             speech.tts("Could not get in line.")
         self.arm.start_up()
+        speech.tts('Finish carry my luggage. Thank you very much.')
         return 'finished'
 
 
@@ -405,7 +406,7 @@ class CarryMyLuggage(Node):
                     transitions={'finished':'LINE_UP'})
             smach.StateMachine.add(
                     'LINE_UP', LineUp(self),
-                    transitions={'finished':'RETURN'})
+                    transitions={'finished':'end'})
             smach.StateMachine.add(
                     'RETURN', Return(self),
                     transitions={'success':'end'})

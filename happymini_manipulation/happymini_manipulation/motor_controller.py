@@ -109,8 +109,8 @@ def main():
     rclpy.init()
     jc_node = JointController()
     
-    jc_node.start_up()
-    #jc_node.neck_up()
+    #jc_node.start_up()
+    jc_node.neck_up()
     #jc_node.manipulation([0.25, 0.4])
     #jc_node.gripper(True)
     #jc_node.carry()
