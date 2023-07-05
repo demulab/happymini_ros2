@@ -253,27 +253,31 @@ class StandInLineServer(Node):
             # before_min_coordがなかったらmin_coordを代入
             if before_min_coord is None:
                 before_min_coord = min_coord
-            # 
+            # 最小値がある and cntが50未満 and find_flgがFalse
             if not min_coord and cnt < 50 and not find_flg:
                 sub_cnt = 0
                 search_range = 50
                 while sub_cnt < 1 and not find_flg:
                     rclpy.spin_once(self, timeout_sec=0.1)
+                    min_coord = self.get_min_coord(self.person_info)
                     if min_coord:
                         find_flg = True
                         break
                     self.bc_node.rotate_angle(search_range, 0, speed=0.3, time_out=10)
                     rclpy.spin_once(self, timeout_sec=2.0)
+                    min_coord = self.get_min_coord(self.person_info)
                     if min_coord:
                         find_flg = True
                         break
                     self.bc_node.rotate_angle(-1*search_range*2, 0, speed=0.3, time_out=10)
                     rclpy.spin_once(self, timeout_sec=2.0)
+                    min_coord = self.get_min_coord(self.person_info)
                     if min_coord:
                         find_flg = True
                         break
                     self.bc_node.rotate_angle(search_range)
                     rclpy.spin_once(self, timeout_sec=2.0)
+                    min_coord = self.get_min_coord(self.person_info)
                     if min_coord:
                         find_flg = True
                         break
@@ -286,7 +290,7 @@ class StandInLineServer(Node):
             if min_coord.z >= max_dist or not min_coord:
                 break
             # 列が前に進んだら続く
-            if before_min_coord.z < min_coord.z and min_coord.z < max_dist and cnt > 20:
+            if abs(before_min_coord.z - min_coord.z) and min_coord.z < max_dist and cnt > 20:
                 self.bc_node.rotate_angle(math.degrees(math.atan2(min_coord.x, min_coord.z)), 0, speed=0.3, time_out=10)
                 self.bc_node.translate_dist(min_coord.z - before_min_coord.z - 0.1, speed=0.2)
                 before_min_coord = min_coord
@@ -311,7 +315,7 @@ class StandInLineServer(Node):
                 # Response
                 goal_handle.succeed()
                 result = StandInLine.Result()
-                result.result = False
+                result.result = 'None line'
                 self.get_logger().info(f"Result: {result}")
                 return result
             # before_coordinateがなければcoordinateを代入
@@ -369,7 +373,7 @@ class StandInLineServer(Node):
                 # Response
                 goal_handle.succeed()
                 result = StandInLine.Result()
-                result.result = navi_result
+                result.result = str(navi_result)
                 self.get_logger().info(f"Result: {result}")
                 return result
             if coordinate:

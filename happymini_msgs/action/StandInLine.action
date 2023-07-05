@@ -2,7 +2,7 @@
 string tmp
 ---
 # result
-bool result
+string result
 ---
 # feedback
 string state
