@@ -32,7 +32,7 @@ class WayPointNavi(Node):
         # YAML
         #self.yaml_path = sys.argv[1]
         self.yaml_path = os.path.join(
-                get_package_share_directory('happymini_navigation'), 'location', 'demulab3.yaml')
+                get_package_share_directory('happymini_navigation'), 'location', 'honban_map1.yaml')
         self.get_logger().info(f"Load the following YAML file: {self.yaml_path}")
         # Value
         self.navigation_flg = False

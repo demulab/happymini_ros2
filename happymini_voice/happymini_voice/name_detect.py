@@ -24,7 +24,8 @@ class NameDetectServer(Node):
         self.create_service(NameDetect, 'nd', self.calculate_similarity)
         #self.word_list = self.get_parameter("name")
         #["amelia", "angel", "ava", "charlie", "charlotte", "hunter", "max", "mia", "olivia", "parker", "sam", "jack", "noah", "thomas", "whilliam"]
-        self.word_list = ["amelia", "max", "charlie", "hunter"]
+        self.word_list = ["james", "daniel", "thomas", "alexander", "oliver", "william", "george", "emma", "sophia", "henry", "john"]
+        #self.word_list = ["amelia", "max", "charlie", "hunter"]
         #self.word_list = ["amelia", "angel", "ava", "charlie", "charlotte", "hunter", "max", "mia", "olivia", "parker", "sam", "jack", "noah", "thomas", "whilliam"]
 
     def calculate_ngram_similarity(self, word :str, threshold = 0.1) -> list:
@@ -33,7 +34,8 @@ class NameDetectServer(Node):
 
     def calculate_similarity(self, srv_req, srv_res):
         target_word = srv_req.text.lower().replace(".", "").replace(",", "").replace("!", "").replace("?", "")
-        
+        target_word = target_word.replace("my name is", "").replace(" ", "")
+
         print("Target Word:", target_word)
         
         target_vector = np.array([1 if ch in target_word else 0 for ch in sorted(set(target_word))])

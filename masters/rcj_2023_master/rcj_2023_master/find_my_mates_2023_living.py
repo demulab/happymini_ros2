@@ -9,6 +9,7 @@ import time
 from happymini_msgs.srv import StringCommand, SpeechToText, NameDetect, TextToSpeech, AttributeRecognition, DetectPerson
 from happymini_navigation.navi_location import WayPointNavi
 import pyttsx3
+from happymini_teleop.base_control import BaseControl
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from cv_bridge import CvBridge
@@ -144,6 +145,24 @@ class HitoSekkin(Node):
         self.app_srv_req = TextToSpeech.Request()
         #self.pub = self.create_publisher(String, 'master', 10)
 
+    def executeNoBump(self):
+        self.app_srv_req.text = 'start_nobump'
+        
+        app_srv_future = self.app_srv.call_async(self.app_srv_req)
+        while not app_srv_future.done() and rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.1)
+            print('while')
+        print('out while')
+        if app_srv_future.result() is not None:
+            app_srv_result = app_srv_future.result().result
+            print(app_srv_result)
+            return app_srv_result
+        else:
+            self.get_logger().info(f"Service call failed")
+            return None
+
+
+
     def execute(self):
         self.app_srv_req.text = 'start'
         
@@ -226,7 +245,7 @@ class PersonDetector(Node):
         if self.future.result() is not None:
             response = self.future.result()
             img_cv = self.__bridge.imgmsg_to_cv2(response.result)
-            cv2.imwrite("~/main_ws/src/happymini_ros/masters/rcj_2023_master/img{0}.png".format(self.__cnt), img_cv)
+            cv2.imwrite("/home/demulab/test_data/fmm/person_fmm{0}.png".format(self.__cnt), img_cv)
             self.__cnt += 1
         else:
            self.get_logger().info('サービスが応答しませんでした。')
@@ -238,21 +257,23 @@ def main():
     #synthesis2("Start, find my mates.")
     nb = Navigation()
     hi = HitoSekkin()
+    bc = BaseControl()
     #sp = Speech()
     at = AttributeRecog()
     per = PersonDetector()
-    bc = BaseControl()
     print("tc init")
     tc = TestClient()
     
     tc.tts_send_request("start, find my mates.")
+    bc.translate_dist(-0.4, speed = 0.1)
+
 
     print("tc initialized")
     try:
         #1人目
-        nb.execute('fmm_find11')
+        nb.execute('fmm_find')
         time.sleep(1.0)
-        hi.execute()
+        hi.executeNoBump()
         tc.tts_send_request("What's your name?")
         tc.tts_send_request("Say your name after the beep sound.")
 
@@ -274,10 +295,13 @@ def main():
         #name = sp.execute()
         #name_d = tc.nd_send_request(name)
         res = per.execute()
-        nb.execute('fmm_Operator3')
+        bc.translate_dist(-0.4, speed = 0.1)
+
+        nb.execute('fmm_Operator4')
         time.sleep(1.0)
         tc.tts_send_request("Name is " + name_d)
-        #synthesis2("Name is " + name_d)
+        tc.tts_send_request("The person is located near the table.")
+                #synthesis2("Name is " + name_d)
         #synthesis2("Name is " + name)
         attribute_sentence = at.execute(res.result, res.environment_image)
         features = attribute_sentence.split("_")
@@ -286,7 +310,8 @@ def main():
         #synthesis2(attribute_sentence)
  
         #2人目
-        nb.execute('fmm_find12')
+        bc.translate_dist(-0.4, speed = 0.1)
+        nb.execute('fmm_find2')
         time.sleep(1.0)
         hi.execute()
         tc.tts_send_request("What's your name?")
@@ -307,9 +332,11 @@ def main():
         ##name = sp.execute()
         #name_d = tc.nd_send_request(name)
         res = per.execute()
-        nb.execute('fmm_Operator3')
+        bc.translate_dist(-0.4, speed = 0.1)
+        nb.execute('fmm_Operator4')
         time.sleep(1.0)
         tc.tts_send_request("Name is " + name_d)
+        tc.tts_send_request("The person is located near the television.")
         #synthesis2("Name is " + name_d)
         #synthesis2("Name is " + name)
         attribute_sentence = at.execute(res.result, res.environment_image)
@@ -320,7 +347,8 @@ def main():
 
 
         # 3人目
-        nb.execute('fmm_find13')
+        bc.translate_dist(-0.4, speed = 0.1)
+        nb.execute('fmm_find4')
         time.sleep(1.0)
         hi.execute()
         tc.tts_send_request("What's your name?")
@@ -342,9 +370,11 @@ def main():
         #name = sp.execute()
         #name_d = tc.nd_send_request(name)
         res = per.execute()
-        nb.execute('fmm_Operator3')
+        bc.translate_dist(-0.4, speed = 0.1)
+        nb.execute('fmm_Operator4')
         time.sleep(1.0)
         tc.tts_send_request("Name is " + name_d)
+        tc.tts_send_request("The person is located near the fridge.")
         #synthesis2("Name is " + name_d)
         #synthesis2("Name is " + name)
         attribute_sentence = at.execute(res.result, res.environment_image)

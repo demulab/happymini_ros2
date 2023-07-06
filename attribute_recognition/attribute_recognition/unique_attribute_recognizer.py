@@ -25,7 +25,8 @@ class UniqueAttributeRecognizer:
         self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
         #self.processor = AutoProcessor.from_pretrained("microsoft/git-base-coco")
         #self.model = AutoModelForCausalLM.from_pretrained("microsoft/git-base-coco")
-        self.model = AutoModelForCausalLM.from_pretrained("microsoft/git-large-r-textcaps")         
+        self.model = AutoModelForCausalLM.from_pretrained("microsoft/git-large-r-textcaps") 
+        self.feature_count = 0        
         self.lang_sam = LangSAM()
         self.model.to(self.device)
         self.processor = AutoProcessor.from_pretrained("microsoft/git-large-r-textcaps")
@@ -117,7 +118,7 @@ class UniqueAttributeRecognizer:
             cv2.imwrite(f"/home/demulab/test_data/{shoe[shoe_idx]}.png", target_img)
             color_row = np.median(target_img, axis=0)
             color = np.median(color_row, axis=0)
-            shoe_color = self.findNearestColor(color[2], color[1], color[0])
+            shoe_color = self.findNearestColor(color[2], color[1], color[0], black_penalty=10)
 
         if len(whole_bb) > 0:
             x1 = whole_bb[0][0]
@@ -168,7 +169,7 @@ class UniqueAttributeRecognizer:
         return wear_info
         
 
-    def findNearestColor(self, r, g, b):
+    def findNearestColor(self, r, g, b, black_penalty = 0):
         color_rgb = sRGBColor(r/255.0, g/255.0, b/255.0)
         black_color = sRGBColor(0.0, 0.0, 0.0)
         white_color = sRGBColor(1.0, 1.0, 1.0)
@@ -193,6 +194,9 @@ class UniqueAttributeRecognizer:
             color_lab = convert_color(color_rgb, LabColor)
             list_color = convert_color(color_list[i], LabColor)
             delta = delta_e_cie2000(color_lab, list_color)
+
+            if i == 0:
+                delta -= black_penalty
 
             print(f"delta from {color_name[i]} : {delta}")
             if delta <min_delta:
@@ -221,8 +225,63 @@ class UniqueAttributeRecognizer:
 
         cloth_info = self.recognizeClothColor(image)
         #generated_caption = ""
-        sentence = self.attributesToSentence(generated_caption, demographics, cloth_info)
+        sentence = self.getFeatureTwins(generated_caption, demographics, cloth_info, self.feature_count)
+        #sentence = self.attributesToSentence(generated_caption, demographics, cloth_info)
+        self.feature_count += 1
         return sentence
+
+    def getFeatureTwins(self, description, demographics, cloth_info, mode):
+        combos = [["gender", "age"], ["bottoms_type", "bottoms_color"], ["shoe_color", "tops_color"]]
+        if not demographics["face_found"]:
+            for i in range(len(man_words)):
+                if description.find(man_words[i])  != -1:
+                    demographics["dominant_gender"] = "Man"
+                    break
+            for i in range(len(woman_words)):
+                if description.find(woman_words[i]) != -1:
+                    demographics["dominant_gender"] = "Woman"
+                    break
+            # default strat : man
+            if not "dominant_gender" in demographics:
+                demographics["dominant_gender"] = "Man"
+
+        feature_sentence = ""
+
+
+        if mode == 0:
+            gender = demographics["dominant_gender"].lower()
+            age = "young" if demographics["age"] < 35  else "middle"
+            feature_sentence = f"The person is {age} {gender}."
+
+        elif mode == 1:
+            bottoms_type = cloth_info["cloth"]["bottoms"]
+            bottoms_color = cloth_info["color"]["bottoms"]
+            feature_sentence = f"The person is wearing {bottoms_color} {bottoms_type}."
+
+        elif mode == 2:
+            shoe_color = cloth_info["color"]["shoe"]
+            
+
+            tops_color = ""
+            red_color_found = (description.find("red") != -1) 
+            blue_color_found = (description.find("blue") != -1) 
+            yellow_color_found = (description.find("yellow") != -1)
+
+            if yellow_color_found:
+                tops_color = "yellow"
+            elif blue_color_found:
+                tops_color = "blue"
+            elif red_color_found:
+                tops_color = "red"
+            feature_sentence = f"The person is wearing {tops_color} shirt and {shoe_color} shoes."
+
+
+        return feature_sentence
+
+
+        
+
+
 
     def attributesToSentence(self, description : str, demographics : dict, cloth_info  :dict) -> str:
         """
@@ -291,7 +350,7 @@ class UniqueAttributeRecognizer:
             color_sentence = "{0} wears a {1} and a {2} {3}.".format(pron, cloth_info["cloth"]["whole"], color_info["shoe"], cloth_info["cloth"]["shoe"])
 
 
-        return "{0}_{1}_{2}_{3}_{4}".format(description, gender_sentence, age_sentence, race_sentence, color_sentence)
+        return "{0}_{1}_{2}_{3}".format(description, gender_sentence, age_sentence, color_sentence)
 
 
 

@@ -9,6 +9,7 @@ import time
 from happymini_msgs.srv import StringCommand, SpeechToText, NameDetect, TextToSpeech, AttributeRecognition, DetectPerson
 from happymini_navigation.navi_location import WayPointNavi
 import pyttsx3
+from happymini_teleop.base_control import BaseControl
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from cv_bridge import CvBridge
@@ -238,10 +239,10 @@ def main():
     #synthesis2("Start, find my mates.")
     nb = Navigation()
     hi = HitoSekkin()
+    bc = BaseControl()
     #sp = Speech()
     at = AttributeRecog()
     per = PersonDetector()
-    bc = BaseControl()
     print("tc init")
     tc = TestClient()
     
@@ -274,6 +275,7 @@ def main():
         #name = sp.execute()
         #name_d = tc.nd_send_request(name)
         res = per.execute()
+        bc.translate_dist(-0.4, speed = 0.1)
         nb.execute('fmm_Operator3')
         time.sleep(1.0)
         tc.tts_send_request("Name is " + name_d)
@@ -307,6 +309,8 @@ def main():
         ##name = sp.execute()
         #name_d = tc.nd_send_request(name)
         res = per.execute()
+        bc.translate_dist(-0.4, speed = 0.1)
+
         nb.execute('fmm_Operator3')
         time.sleep(1.0)
         tc.tts_send_request("Name is " + name_d)
@@ -342,6 +346,8 @@ def main():
         #name = sp.execute()
         #name_d = tc.nd_send_request(name)
         res = per.execute()
+        bc.translate_dist(-0.4, speed = 0.1)
+
         nb.execute('fmm_Operator3')
         time.sleep(1.0)
         tc.tts_send_request("Name is " + name_d)

@@ -187,7 +187,7 @@ class Sekkin(Node):
         self.master = srv_req.text
         self.get_logger().info(f"{self.master}")
         while rclpy.ok():
-            if self.master == 'start':    
+            if self.master.find('start') != -1:    
                 self.set_disan()
                 #self.happy_move(self.dis, self.ang)
                 self.bc_node.rotate_angle(self.ang)
@@ -195,11 +195,12 @@ class Sekkin(Node):
                 print(f"realsense  distance : {self.dis}m, LDS distance : {lds_kyori}m")
 
 
-                fused_dis = min(self.dis, max(lds_kyori - 0.5, 0.1))
-                self.bc_node.translate_dist(fused_dis)
-                time.sleep(1.5)
-                if fused_dis == self.dis:
-                    self.bc_node.translate_dist(-0.2, 0.1)
+                fused_dis = min(self.dis, max(lds_kyori-0.5, 0.1))
+                if self.master.find("nobump") == -1:
+                    self.bc_node.translate_dist(fused_dis)
+                    time.sleep(1.5)
+                    if fused_dis == self.dis:
+                        self.bc_node.translate_dist(-0.2, 0.1)
                 #self.set_disan()
                 #print(self.dis)
                 #print(self.ang)

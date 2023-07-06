@@ -22,6 +22,8 @@ setup(
         'console_scripts': [
             'carry_my_luggage_2023 = rcj_2023_master.carry_my_luggage_2023:main',
             'find_my_mates_2023 = rcj_2023_master.find_my_mates_2023:main',
+            'find_my_mates_2023_bed = rcj_2023_master.find_my_mates_2023_bed:main',
+            'find_my_mates_2023_living = rcj_2023_master.find_my_mates_2023_living:main',
             'voice_test = rcj_2023_master.voice_test:main'
         ],
     },

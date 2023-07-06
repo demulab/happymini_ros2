@@ -61,7 +61,7 @@ class PersonArea(Node):
         area_path = os.path.join(
             get_package_share_directory('happymini_navigation'), 
             'maps',
-            'arena.png')
+            'living.png')
         self.area_img = cv2.imread(area_path, 0)
         self.ppl_loc_viz_img = cv2.imread(area_path, 1)
         self.discovered_ppl = []
@@ -114,8 +114,8 @@ class PersonArea(Node):
     def set_transform(self):
             try:
                 self.t = self.tf_buffer.lookup_transform(
-                        "base_link",
                         "map",
+                        "base_link",
                         rclpy.time.Time())
             except TransformException as e:
                 print("no tf found")
@@ -131,9 +131,10 @@ class PersonArea(Node):
         map_x = self.mapinfo.origin.position.x
         map_y = self.mapinfo.origin.position.y
 
-        robotx = -int( (x + map_x) / self.mapinfo.resolution) 
-        roboty = self.mapinfo.height + int((y + map_y) / self.mapinfo.resolution)
+        robotx = int( (x - map_x) / self.mapinfo.resolution) 
+        roboty = self.mapinfo.height + int((-y + map_y) / self.mapinfo.resolution)
 
+        print(map_x, map_y, x, y)
 
 
         print("map height, map width", self.mapinfo.height, self.mapinfo.width)
@@ -144,9 +145,9 @@ class PersonArea(Node):
         print('robo x', robotx)
         print('robo y', roboty)
 
-        #print('r :', math.degrees(euler[0]))
-        #print('p :', math.degrees(euler[1]))
-        #print('y :', math.degrees(euler[2]))
+        print('r :', math.degrees(euler[0]))
+        print('p :', math.degrees(euler[1]))
+        print('y :', math.degrees(euler[2]))
         min_dist = 10000
         min_idx = 0
         ppl_found = False
@@ -157,7 +158,12 @@ class PersonArea(Node):
         distance_from_robot = []
 
         for i in range(len(self.personmulti.poses)):
-            angle = math.atan2(self.personmulti.poses[i].z, self.personmulti.poses[i].x) - math.pi/2
+            angle = (-math.atan2(self.personmulti.poses[i].z, self.personmulti.poses[i].x) - math.pi/2)
+            #if angle > 0:
+            #    angle = math.pi - angle
+            #else:
+            #    angle = -math.pi - angle
+
             dist = math.sqrt(self.personmulti.poses[i].x**2 + self.personmulti.poses[i].z**2)
             print('people :', math.degrees(angle))
             print('peoplemap :', math.degrees(euler[2] - angle))
@@ -173,12 +179,14 @@ class PersonArea(Node):
 
 
 
-            pxx = robotx - int(people_x  / self.mapinfo.resolution) -1
+            pxx = robotx + int(people_x  / self.mapinfo.resolution) -1
             pxy = roboty - int(people_y / self.mapinfo.resolution) -1
             #cv2.circle(self.map, (pxy, pxx), 10, 255, -1)
             #cv2.imwrite('/home/demulab/test_data/map2.png', self.map)
             print('pxx :', pxx)
             print('pxy :', pxy)
+            print("people y ", people_y)
+            print("people x " ,  people_x)
             people_map_x = x + people_x - map_x
             people_map_y = y + people_y - map_y
 
