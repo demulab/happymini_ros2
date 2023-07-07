@@ -205,7 +205,7 @@ class PersonArea(Node):
                 for j in range(len(self.discovered_ppl)):
                     diff = math.sqrt((people_map_x - self.discovered_ppl[j][0]) ** 2 + (people_map_y - self.discovered_ppl[j][1]) **2)
                     print("checking distance from discovered person : ", diff)
-                    if diff < 0.25:
+                    if diff < 0.5:
                         is_dup[i] = True
                         print("same ppl found, skipping")
                         break

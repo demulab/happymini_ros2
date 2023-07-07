@@ -36,7 +36,7 @@ class Mimic3PlayServer(Node):
         # Mimic3 Plugin
         self.mimic3_plug = None
 
-    def get_params(self):
+    def get_params(self): 
         # Get params
         voice = self.get_parameter('voice').value
         speaker = self.get_parameter('speaker').value
@@ -55,6 +55,8 @@ class Mimic3PlayServer(Node):
         if '.wav' in file_name:
             dot_wav = ''
         # 保存先のパス
+
+        print(f"TTS : {text}")
         self.save_path = self.wav_path + file_name + dot_wav
         self.mimic3_plug.get_tts(text, self.save_path)     # 音声作成 and 保存
         self.get_logger().info(f"Save to {self.save_path}")

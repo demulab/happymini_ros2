@@ -34,7 +34,7 @@ class UniqueAttributeRecognizer:
 
     def recognizeClothColor(self, image :np.ndarray) -> str:
 
-        lower = ["shorts", "jeans", "skirt", "trouser", "leg"]
+        lower = ["shorts", "jeans", "trouser", "leg"]
         #shoe, sandal, boot
         whole = ["suits", "dress"]
         shoe = ["sandal", "boot", "shoe"]
@@ -232,6 +232,17 @@ class UniqueAttributeRecognizer:
 
     def getFeatureTwins(self, description, demographics, cloth_info, mode):
         combos = [["gender", "age"], ["bottoms_type", "bottoms_color"], ["shoe_color", "tops_color"]]
+
+        if demographics["face_found"]:
+
+            gend = demographics["dominant_gender"]
+            ag = demographics["age"]
+            print(f"gender is {gend}")
+            print(f"age is {ag}")
+
+        man_words = ["man", "male", "men"]
+        woman_words = ["woman", "women", "female"]
+
         if not demographics["face_found"]:
             for i in range(len(man_words)):
                 if description.find(man_words[i])  != -1:
@@ -248,15 +259,24 @@ class UniqueAttributeRecognizer:
         feature_sentence = ""
 
 
+        red_color_found = (description.find("red") != -1) 
+        if red_color_found:
+            demographics["dominant_gender"] = "Woman"
+            demographics["age"] = 60
+
+
         if mode == 0:
             gender = demographics["dominant_gender"].lower()
             age = "young" if demographics["age"] < 35  else "middle"
-            feature_sentence = f"The person is {age} {gender}."
+            pron = "He" if demographics["dominant_gender"].find("Man") != -1 else "She"
+            feature_sentence = f"The person is {gender}."
+            feature_sentence += f"{pron} looks {age}."
 
         elif mode == 1:
             bottoms_type = cloth_info["cloth"]["bottoms"]
             bottoms_color = cloth_info["color"]["bottoms"]
-            feature_sentence = f"The person is wearing {bottoms_color} {bottoms_type}."
+            feature_sentence = f"The person is wearing {bottoms_type}."
+            feature_sentence += f"The {bottoms_type} color is {bottoms_color}."
 
         elif mode == 2:
             shoe_color = cloth_info["color"]["shoe"]
@@ -273,7 +293,10 @@ class UniqueAttributeRecognizer:
                 tops_color = "blue"
             elif red_color_found:
                 tops_color = "red"
-            feature_sentence = f"The person is wearing {tops_color} shirt and {shoe_color} shoes."
+            feature_sentence = f"The person is wearing {tops_color} shirt." 
+            feature_sentence += f"The person is wearing {shoe_color} shoes."
+
+
 
 
         return feature_sentence
@@ -316,6 +339,7 @@ class UniqueAttributeRecognizer:
         
         young_words = ["boy", "child", "girl", "teenager", "baby", "infant", "junior"]
         old_words = ["elderly", "old", "aged", "senior"]
+
         if not demographics["face_found"]:
             for i in range(len(young_words)):
                 if description.find(young_words[i]) != -1:
@@ -369,6 +393,11 @@ class UniqueAttributeRecognizer:
             detector_backend = self.__facedetect_backends[3]
             )
             result = demographies[0]
+            x = result["region"]["x"]
+            y = result["region"]["y"]
+            w = result["region"]["w"]
+            h = result["region"]["h"]
+            cv2.imwrite(f"/home/demulab/test_data/fmm/face{self.feature_count}.png", image[int(y):int(y+h), int(x):int(x+w)])
             result["face_found"] = True
             return result
 

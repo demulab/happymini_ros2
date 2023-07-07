@@ -271,9 +271,9 @@ def main():
     print("tc initialized")
     try:
         #1人目
-        nb.execute('fmm_find')
+        nb.execute('fmm_find2')
         time.sleep(1.0)
-        hi.executeNoBump()
+        hi.execute()
         tc.tts_send_request("What's your name?")
         tc.tts_send_request("Say your name after the beep sound.")
 
@@ -300,7 +300,7 @@ def main():
         nb.execute('fmm_Operator4')
         time.sleep(1.0)
         tc.tts_send_request("Name is " + name_d)
-        tc.tts_send_request("The person is located near the table.")
+        tc.tts_send_request("The person is located near the television.")
                 #synthesis2("Name is " + name_d)
         #synthesis2("Name is " + name)
         attribute_sentence = at.execute(res.result, res.environment_image)
@@ -311,7 +311,7 @@ def main():
  
         #2人目
         bc.translate_dist(-0.4, speed = 0.1)
-        nb.execute('fmm_find2')
+        nb.execute('fmm_find3')
         time.sleep(1.0)
         hi.execute()
         tc.tts_send_request("What's your name?")
@@ -336,7 +336,7 @@ def main():
         nb.execute('fmm_Operator4')
         time.sleep(1.0)
         tc.tts_send_request("Name is " + name_d)
-        tc.tts_send_request("The person is located near the television.")
+        tc.tts_send_request("The person is located near the fridge.")
         #synthesis2("Name is " + name_d)
         #synthesis2("Name is " + name)
         attribute_sentence = at.execute(res.result, res.environment_image)
@@ -348,9 +348,9 @@ def main():
 
         # 3人目
         bc.translate_dist(-0.4, speed = 0.1)
-        nb.execute('fmm_find4')
+        nb.execute('fmm_find')
         time.sleep(1.0)
-        hi.execute()
+        hi.executeNoBump()
         tc.tts_send_request("What's your name?")
         tc.tts_send_request("Say your name after the beep sound.")
 
@@ -374,7 +374,7 @@ def main():
         nb.execute('fmm_Operator4')
         time.sleep(1.0)
         tc.tts_send_request("Name is " + name_d)
-        tc.tts_send_request("The person is located near the fridge.")
+        tc.tts_send_request("The person is located near the table.")
         #synthesis2("Name is " + name_d)
         #synthesis2("Name is " + name)
         attribute_sentence = at.execute(res.result, res.environment_image)

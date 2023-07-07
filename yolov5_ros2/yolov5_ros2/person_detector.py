@@ -23,7 +23,7 @@ class PersonDetector(Node):
             '/image_raw',
             self.image_callback,
             qos_profile_sensor_data)
-        
+        self.cnt = 0
         self.img = Image()
         self.bridge = CvBridge()
         self.service = self.create_service(
@@ -59,6 +59,7 @@ class PersonDetector(Node):
             img_msg = self.bridge.cv2_to_imgmsg(ppl_img, "bgr8")
         else:
             img_msg = self.bridge.cv2_to_imgmsg(self.img, "bgr8")
+
 
         response.result = img_msg
         response.environment_image = self.img
