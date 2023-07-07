@@ -1,0 +1,5 @@
+string text
+---
+bool result
+geometry_msgs/Vector3 pose
+geometry_msgs/Vector3 map_pose

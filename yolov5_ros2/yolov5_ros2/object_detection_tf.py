@@ -8,19 +8,29 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Float32MultiArray
 from sensor_msgs.msg import Image, CameraInfo
-from geometry_msgs.msg import TransformStamped
+from geometry_msgs.msg import TransformStamped, Vector3
 from cv_bridge import CvBridge, CvBridgeError
 from rclpy.utilities import remove_ros_args
 from message_filters import Subscriber, ApproximateTimeSynchronizer
 from tf2_ros import TransformBroadcaster
+from happymini_msgs.srv import PersonMulti
 
 from yolov5_ros2.detector import Detector, parse_opt
+from rclpy.callback_groups import ReentrantCallbackGroup                                                                            
+from rclpy.executors import MultiThreadedExecutor
+import threading
 
 
 class ObjectDetection(Node):
 
     def __init__(self, **args):
         super().__init__('object_detection')
+
+        self.callback_group = ReentrantCallbackGroup()
+
+        self.service = self.create_service(
+                PersonMulti, 'fmm/multi', self.person_callback)
+        
 
         self.target_name = 'person'
         self.frame_id = 'target'
@@ -38,25 +48,15 @@ class ObjectDetection(Node):
         self.ts = ApproximateTimeSynchronizer(
             [self.sub_info, self.sub_color, self.sub_depth], 10, 0.1)
         self.ts.registerCallback(self.images_callback)
-        self.broadcaster = TransformBroadcaster(self)
-        self.pub = self.create_publisher(Float32MultiArray, 'topic', 10)
+       
 
-
-    def images_callback(self, msg_info, msg_color, msg_depth):
-        try:
-            img_color = CvBridge().imgmsg_to_cv2(msg_color, 'bgr8')
-            img_depth = CvBridge().imgmsg_to_cv2(msg_depth, 'passthrough')
-        except CvBridgeError as e:
-            self.get_logger().warn(str(e))
-            return
-
-        if img_color.shape[0:2] != img_depth.shape[0:2]:
+    def person_callback(self, request, response):
+        if self.img_color.shape[0:2] != self.img_depth.shape[0:2]:
             self.get_logger().warn('カラーと深度の画像サイズが異なる')
             return
 
+        img_color = self.img_color.copy()
         img_color, result = self.detector.detect(img_color)
-
-        cv2.imshow('color', img_color)
 
         
         #num = 0
@@ -66,6 +66,9 @@ class ObjectDetection(Node):
         point = [0, 0, 0]
         minpoint = []
         target = None
+        img_msg_emv = CvBridge().cv2_to_imgmsg(img_color, 'bgr8')
+        response.environment_image = img_msg_emv
+        print('yolo')
         for r in result:
             if r.name == self.target_name:
                 target = r
@@ -75,111 +78,89 @@ class ObjectDetection(Node):
                 v2 = round(target.v2)
                 u = round((target.u1 + target.u2) / 2)
                 v = round((target.v1 + target.v2) / 2)
-                depth = np.median(img_depth[v1:v2+1, u1:u2+1])
+                print('yolo2')
+                depth = np.median(self.img_depth[v1:v2+1, u1:u2+1])
+                ppl_img = img_color[v1:v2+1, u1:u2+1]
+                img_msg = CvBridge().cv2_to_imgmsg(ppl_img, 'bgr8')
+                area =  (u2 - u1) * (v2 - v1)
+                img_h, img_w, _ = img_color.shape
+                arearatio = float(area)/float(img_h * img_w)
 
-                #if depth != 0:
-                z = depth * 1e-3
-                #z = min(dep)
-                fx = msg_info.k[0]
-                fy = msg_info.k[4]
-                cx = msg_info.k[2]
-                cy = msg_info.k[5]
-                x = z / fx * (u - cx)
-                y = z / fy * (v - cy)
-                point[0] = x
-                point[1] = y
-                point[2] = z
-                if target is not None:
-                    minpoint.append(np.array(point))
-                    #msg = Float32MultiArray()
-                    self.get_logger().info(f'{minpoint}')
-                    #msg.data = list(point)
-                    #self.pub.publish(msg)
-                    #self.get_logger().info(f'pub:{msg.data}')                
-                point[:3] = [0, 0, 0]
+                if arearatio >= 0.03:
+                    response.images.append(img_msg)
+                    print(ppl_img.shape)
+                    print('yolo3')
 
-                    #self.get_logger().info(f'最小値:{z}')
-                    #self.get_logger().info(f'数:{num}')
-                    #self.get_logger().info(
-                    #        f'{target.name}:{num} ({x:.3f}, {y:.3f}, {z:.3f})')
-                    #plt.plot(dep,n) S
-                    #plt.show()
-        #            ts = TransformStamped()
-        #            ts.header = msg_depth.header
-        #            ts.child_frame_id = self.frame_id
-        #            ts.transform.translation.x = x
-        #            ts.transform.translation.y = y
-        #            ts.transform.translation.z = z
-        #            self.broadcaster.sendTransform(ts)
+                    #if depth != 0:
+                    z = depth * 1e-3
+                    #z = min(dep)
+                    fx = self.k[0]
+                    fy = self.k[4]
+                    cx = self.k[2]
+                    cy = self.k[5]
+                    x = z / fx * (u - cx)
+                    y = z / fy * (v - cy)
+                    point[0] = x
+                    point[1] = y
+                    point[2] = z
 
-                    #num += 1
-                    #break
-        #plt.plot(ny,nx)
-        #plt.show()
-        #self.get_logger().info(
-        #    f'{target.name}:near ({ts.transform.translation.x:.3f})'
-        #)
-        #self.get_logger().info(
-        #        f'points:{minpoint}' )
-        if target is not None:
-            zz = np.argmin(minpoint, axis = 0)
-            cc = zz[2]
-            pp = minpoint[cc]
-            print(type(pp))
-            #self.get_logger().info(
-            #       f'{pp}' )
-            msg = Float32MultiArray()
-            msg.data = list(pp)
-            self.pub.publish(msg)
-            #self.get_logger().info(f'pub:{msg.data[2]}')
+                    ppl_point =Vector3()
+                    ppl_point.x = x
+                    ppl_point.y = y
+                    ppl_point.z = z
+                    if abs(z) < 3: 
+                        response.poses.append(ppl_point)
+                        response.tags.append(r.name)
+                        response.likelihood.append(r.conf)
+
+                #if target is not None:
+                #    minpoint.append(np.array(point))
+                #    #msg = Float32MultiArray()
+                #    self.get_logger().info(f'{minpoint}')
+                #    #msg.data = list(point)
+                #    #self.pub.publish(msg)
+                #    #self.get_logger().info(f'pub:{msg.data}')                
+                #point[:3] = [0, 0, 0]
 
         #if target is not None:
-        #    u1 = round(target.u1)
-        #    u2 = round(target.u2)
-        #    v1 = round(target.v1)
-        #    v2 = round(target.v2)
-        #    u = round((target.u1 + target.u2) / 2)
-        #    v = round((target.v1 + target.v2) / 2)
-        #    #depth = np.median(img_depth[v1:v2+1, u1:u2+1])
-        #    if depth != 0:
-        #        #z = depth * 1e-3
-        #        z = min(dep)
-        #        fx = msg_info.k[0]
-        #        fy = msg_info.k[4]
-        #        cx = msg_info.k[2]
-        #        cy = msg_info.k[5]
-        #        x = z / fx * (u - cx)
-        #        y = z / fy * (v - cy)
-        #        #self.get_logger().info(f'最小値:{z}')
-         #   self.get_logger().info(f'数:{num}')
-        #        self.get_logger().info(
-        #                f'{target.name}:{num} ({x:.3f}, {y:.3f}, {z:.3f})')
-        #        #plt.plot(dep,n) 
-        #        plt.show()
-        #    ts = TransformStamped()
-        #    ts.header = msg_depth.header
-        #    ts.child_frame_id = self.frame_id
-        #    ts.transform.translation.x = x
-        #    ts.transform.translation.y = y
-        #    ts.transform.translation.z = z
-        #    self.broadcaster.sendTransform(ts)
+        #    zz = np.argmin(minpoint, axis = 0)
+        #    cc = zz[2]
+        #    pp = minpoint[cc]
+        #    print(type(pp))
+        #    #self.get_logger().info(
+        #    #       f'{pp}' )
+        #    msg = Float32MultiArray()
+        #    msg.data = list(pp)
+        #img_depth *= 16
 
-        img_depth *= 16
-        if target is not None:
-            pt1 = (int(target.u1), int(target.v1))
-            pt2 = (int(target.u2), int(target.v2))
-            cv2.rectangle(img_depth, pt1=pt1, pt2=pt2, color=0xffff)
+        #if target is not None:
+        #    pt1 = (int(target.u1), int(target.v1))
+        #    pt2 = (int(target.u2), int(target.v2))
+        #    cv2.rectangle(img_depth, pt1=pt1, pt2=pt2, color=0xffff)
+        #print(response)
+        return response
 
-        cv2.imshow('depth', img_depth)
-        cv2.waitKey(1)
 
+
+
+    def images_callback(self, msg_info, msg_color, msg_depth):
+        try:
+            self.img_color = CvBridge().imgmsg_to_cv2(msg_color, 'bgr8')
+            self.img_depth = CvBridge().imgmsg_to_cv2(msg_depth, 'passthrough')
+        except CvBridgeError as e:
+            self.get_logger().warn(str(e))
+            return
+        self.k = msg_info.k
+
+        
 
 def main():
     rclpy.init()
     opt = parse_opt(remove_ros_args(args=sys.argv))
     node = ObjectDetection(**vars(opt))
+
     try:
-        rclpy.spin(node)
+       rclpy.spin(node)
     except KeyboardInterrupt:
         pass
     rclpy.shutdown()

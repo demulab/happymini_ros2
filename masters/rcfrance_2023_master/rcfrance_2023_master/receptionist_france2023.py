@@ -52,6 +52,7 @@ def synthesis2(text = None):
 
 
 class AttributeRecog(Node):
+
     def __init__(self):
         super().__init__("attrib")
         self.node = rclpy.create_node('attrib_recog')
@@ -127,6 +128,8 @@ class Navigation(smach.State):
             self.logger.info("/navi_location_server is not here ...")
         self.req = NaviLocation.Request()
 
+
+
     def do_navigation(self):
         # Call
         future = self.navi.call_async(self.req)
@@ -142,7 +145,7 @@ class Navigation(smach.State):
             self.logger.info(f"Service call failed")
 
     def execute(self, userdata):
-        self.req.location_name = 'recp_' + userdata.location_name_in
+        self.req.location_name = 'recep_' + userdata.location_name_in
         navi_result = False
         counter = 1
         while not navi_result and rclpy.ok():
@@ -161,13 +164,33 @@ class WaitGuest(smach.State):
                 output_keys=['guest_num_out'])
         # Node
         self.node = node
+        self.approach = node.create_client(TextToSpeech, 'app')
         self.logger = node.get_logger()
         self.num_persoon = 0
+        self.req = TextToSpeech.Request()
 
+    def get_close_to_person(self):
+        # Call
+        self.req.text = "start"
+        future = self.approach.call_async(self.req)
+        # Waiting
+        print(f'Starting to wait guest')
+        while not future.done() and rclpy.ok():
+            rclpy.spin_once(self.node, timeout_sec=0.1)
+            print("wait for guest")
+        # Result
+        if future.result() is not None:
+            navi_result = future.result().result
+            print(navi_result)
+        else:
+            self.logger.info(f"Service call failed")
+
+            
     def execute(self, userdata):
         self.num_persoon += 1
         userdata.guest_num_out = self.num_persoon
-        self.node.tts('Please come to front of me.')
+        self.get_close_to_person()
+        self.node.tts('Hello Guest')
         time.sleep(1.0)
         return 'success'
 
@@ -217,9 +240,10 @@ class GetInfo(smach.State):
             self.get_logger().info(f"Service call failed")
             return None
 
-    def nd_send_request(self, text=None):
+    def nd_send_request(self, text=None, type_name="name"):
         nd_srv_result = 'None'
         self.nd_srv_req.text = text
+        self.nd_srv_req.type = type_name
 
         nd_srv_future = self.nd_srv.call_async(self.nd_srv_req)
         while not nd_srv_future.done() and rclpy.ok():
@@ -234,6 +258,7 @@ class GetInfo(smach.State):
 
     def execute(self, userdata):
         name_flg = False
+        drink_flg = False
         global name_list
         global fav_drink_list
         global feature_list
@@ -245,17 +270,33 @@ class GetInfo(smach.State):
             name = self.stt_send_request()
             name = name.replace(" ","").replace(".","")
             name_d = self.nd_send_request(name)
-            # Get Drink
-            try:
-                drink = self.drinks[name_d]
-                name_flg = True
-            except KeyError:
+
+            if name_d.lower().find("none") != -1:
                 _ = self.node.tts('Sorry. I did not catch that. Plrease try again.')
-                #synthesis2('Sorry. I did not catch that. Plrease try again.')
                 continue
-            print(drink)
+    
+            name_flg = True
+
+            while not drink_flg:
+                # Get Drink
+                
+                _ = self.node.tts('What is your favorite drink?')
+                _ = self.node.tts('"Say the drink after the beep sound."')
+                drink_name = self.stt_send_request()
+                drink_name = drink_name.replace(" ","").replace(".","")
+                drink_name_d = self.nd_send_request(drink_name, type_name="drink")
+
+                if drink_name_d.lower().find("none") != -1:
+                    _ = self.node.tts('Sorry. I did not catch that. Plrease try again.')
+                    continue
+
+                drink_flg = True
+
+            print(drink_name_d)
             name_list.append(name_d)
-            fav_drink_list.append(drink)
+            fav_drink_list.append(drink_name_d)
+
+        
         _ = self.node.tts('Hi, ' + name_d)
         # PersonDetector
         self.__pd_req = DetectPerson.Request()
@@ -295,7 +336,7 @@ class GetInfo(smach.State):
         #else:
         #   self.get_logger().info('サービスが応答しませんでした。')
         userdata.name_out = name_d
-        userdata.drink_out = drink
+        userdata.drink_out = drink_name_d
         userdata.feature_out = attribute_sentence
         #userdata.feature_out = response.result
         #print(userdata.name_out)
@@ -335,21 +376,19 @@ class SayInfo(smach.State):
         self.logger = node.get_logger()
 
     def execute(self, userdata):
-        global is_second
-        global name_list
-        global feature_list
+
         _ = self.node.tts('Name is ' + userdata.name_in)
         #synthesis2('Name is ' + userdata.name_in)
         time.sleep(1.0)
         _ = self.node.tts(userdata.name_in + "'s favorite drink is " + userdata.drink_in)
         #synthesis2('Drink is ' + userdata.drink_in)
-        time.sleep(1.0)
-        if is_second:
-            first_sentence = f"Hey {name_list[0]}, I want to introduce {name_list[1]}."
-            _ = self.node.tts(first_sentence)
-            _ = self.node.tts(feature_list[1])
+        #time.sleep(1.0)
+        #if is_second:
+        #    first_sentence = f"Hey {name_list[0]}, I want to introduce {name_list[1]}."
+        #    _ = self.node.tts(first_sentence)
+        #    _ = self.node.tts(feature_list[1])
         #synthesis2(userdata.feature_in)
-        is_second = True
+        #is_second = True
         return 'success'
 
 
@@ -375,6 +414,11 @@ class GuideToSeat(smach.State):
         self.twist = Twist()
 
     def execute(self, userdata):
+        global is_second
+        global name_list
+        global fav_drink_list
+        global feature_list
+
         self.__req = DetectEmptyChair.Request()
         self.__req.command = ""
         self.future = self.__client.call_async(self.__req)
@@ -428,7 +472,15 @@ class GuideToSeat(smach.State):
             print(move_angle, self.twist.angular.z)
             time.sleep(0.01)
             cnt += 1
+
+        if is_second:
+            first_sentence = f"Hey {name_list[0]}, I want to introduce {name_list[1]}."
+            _ = self.node.tts(first_sentence)
+            _ = self.node.tts(feature_list[1])
+            #synthesis2(userdata.feature_in)
             #self.bc_node.rotate_angle(move_angle, precision=0, speed=0.4, time_out=3)
+        is_second = True
+
         userdata.location_name_out = 'wait_position'
         if userdata.guest_num_in == 1:
             userdata.guest_num_out = userdata.guest_num_in + 1

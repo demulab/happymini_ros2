@@ -142,12 +142,12 @@ class EmptySeatFinder(Node):
                 chair_info["v2"] = round(r.v2)
                 chair_info["u1"] = round(r.u1)
                 chair_info["u2"] = round(r.u2)
-                if self.calculateAreaRatio(chair_info, img_w, img_h) > 0.005:
-                    print("chair is in the near range")
-                    chair.append(chair_info)
-                else:
-                    print("removing far chairs")
-                    print("area : {0}".format(self.calculateAreaRatio(chair_info, img_w, img_h)))
+                #if self.calculateAreaRatio(chair_info, img_w, img_h) > 0.005:
+                #    print("chair is in the near range")
+                chair.append(chair_info)
+                #else:
+                #    print("removing far chairs")
+                #    print("area : {0}".format(self.calculateAreaRatio(chair_info, img_w, img_h)))
             if r.name == "people":
                 people_info = dict()
                 people_info["v1"] = round(r.v1)

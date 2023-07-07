@@ -24,9 +24,12 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     "srv/WavPlay.srv"
     "srv/WavMake.srv"
     "srv/TrackPerson.srv"
+    "srv/PersonInArea.srv"
+    "srv/PersonMulti.srv"
+    "srv/LDSDistanceFind.srv"
     "action/GraspBag.action"
     "msg/DetectionResult.msg"
-    DEPENDENCIES sensor_msgs
+    DEPENDENCIES sensor_msgs geometry_msgs
     )
 
 ament_export_dependencies(rosidl_default_runtime)

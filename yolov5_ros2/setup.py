@@ -35,7 +35,8 @@ setup(
             'empty_seat_finder = yolov5_ros2.empty_seat_finder:main',
             'person_detector = yolov5_ros2.person_detector:main',
             'camera_suv = yolov5_ros2.camera_suv:main',
-            'happymini_sekkin = yolov5_ros2.happymini_sekkin'
+            'happymini_sekkin = yolov5_ros2.happymini_sekkin',
+            'person_in_area = yolov5_ros2.person_in_area:main'
         ],
     },
 )
