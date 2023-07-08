@@ -174,6 +174,8 @@ class WaitGuest(smach.State):
         self.req.text = "start"
         future = self.approach.call_async(self.req)
         # Waiting
+        _= self.node.tts("wait for guest")
+
         print(f'Starting to wait guest')
         while not future.done() and rclpy.ok():
             rclpy.spin_once(self.node, timeout_sec=0.1)
@@ -433,50 +435,19 @@ class GuideToSeat(smach.State):
         if len(result.angles) > 0:
             self.bc_node.rotate_angle(-1*result.angles[0])
         # しゃべる
-        _ = self.node.tts('Please sit in the chair in the direction I am facing now. Please wait until I turn around.')
+        _ = self.node.tts('Please sit in the chair in the direction I am facing now. ')
         #synthesis2('Please sit in the chair in the direction I am facing.')
         # tracking
-        self.bc_node.rotate_angle(180, precision=0, speed=0.5, time_out=10)
-        _ = self.node.tts("Please sit in the chair.")
-        time.sleep(1.0)
-        start_time = time.time()
-
+        time.sleep(10)
         move_angle = 0
         cnt = 0
         
-        while rclpy.ok():
-            
-            if time.time() - start_time > 20:
-                self.twist.angular.z = 0.0
-                self.twist_pub.publish(self.twist)
-                break
-            print("updating angle")
-
-            import subprocess
-            returnval = subprocess.run("ros2 service call /recp/track_person happymini_msgs/srv/TrackPerson command:\'\'", shell=True, executable="/bin/bash", capture_output=True, text=True).stdout
-            stdoutlines = returnval.split("\n")
-            angle = 0.0
-            for i in range(len(stdoutlines)):
-                if stdoutlines[i].find("angle=") != -1:
-                    angle = float(stdoutlines[i][stdoutlines[i].find("angle=")+6:stdoutlines[i].find(")")])
-                    print(angle)
-                    break
-            #sysres = call(["ros2", "topic", "list"], shell=True, executable="/bin/bash")
-            move_angle = -1 * angle#-1 * tp_node.execute()
-            self.twist.angular.z = math.radians(move_angle)*0.5
-            if abs(move_angle) <= 5:
-                self.twist.angular.z = 0.0
-            if abs(self.twist.angular.z) > 0.7:
-                self.twist.angular.z = (self.twist.angular.z/abs(self.twist.angular.z))*0.6
-            self.twist_pub.publish(self.twist)
-            print(move_angle, self.twist.angular.z)
-            time.sleep(0.01)
-            cnt += 1
-
         if is_second:
-            first_sentence = f"Hey {name_list[0]}, I want to introduce {name_list[1]}."
+            first_sentence = f"Hey {name_list[1]}, I want to introduce {name_list[0]}."
             _ = self.node.tts(first_sentence)
-            _ = self.node.tts(feature_list[1])
+            feature_sentences = feature_list[0].split("_")
+            for i in range(len(feature_sentences)):
+                _ = self.node.tts(feature_sentences[i])
             #synthesis2(userdata.feature_in)
             #self.bc_node.rotate_angle(move_angle, precision=0, speed=0.4, time_out=3)
         is_second = True

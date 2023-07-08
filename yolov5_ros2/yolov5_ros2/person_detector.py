@@ -28,12 +28,13 @@ class PersonDetector(Node):
         self.bridge = CvBridge()
         self.service = self.create_service(
             DetectPerson, 'fmm_person_service/detect', self.detectPerson)
-        
+        self.cnt = 0
 
     def image_callback(self, image : Image) -> None:
         self.img = image
 
     def detectPerson(self, request : DetectPerson.Request, response : DetectPerson.Response) -> DetectPerson.Response:
+        self.cnt += 1
         try:
             img0 = self.bridge.imgmsg_to_cv2(self.img, "bgr8")
         except CvBridgeError as e:
@@ -53,7 +54,11 @@ class PersonDetector(Node):
                 u2 = round(r.u2)
                 ppl_img = new_img[v1:v2+1, u1:u2+1]
                 likelihood = r.conf
-        
+
+        if len(result) > 0:
+            bb_img = cv2.rectangle(new_img, (u1, v1), (u2, v2), (0, 255, 0), 5)
+            cv2.imwrite(f"/home/demulab/test_data/recp/persondetect{self.cnt}.png", bb_img)
+
         h, w, _ = ppl_img.shape
         if h*w > 0:
             img_msg = self.bridge.cv2_to_imgmsg(ppl_img, "bgr8")

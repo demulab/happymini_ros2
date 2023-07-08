@@ -128,7 +128,7 @@ class EmptySeatFinder(Node):
         self.cnt += 1
         new_img = self.img.copy()
         img, result = self.detector.detect(new_img)
-        cv2.imwrite("/home/demulab/test_data/detect.png", img)
+        cv2.imwrite(f"/home/demulab/test_data/recp/detect_all_for_chair_{self.cnt}.png", img)
         img_h, img_w, _ = img.shape
         print("w, h : {0}, {1}".format(img_w, img_h))
         
@@ -148,7 +148,7 @@ class EmptySeatFinder(Node):
                 #else:
                 #    print("removing far chairs")
                 #    print("area : {0}".format(self.calculateAreaRatio(chair_info, img_w, img_h)))
-            if r.name == "people":
+            if r.name == "person":
                 people_info = dict()
                 people_info["v1"] = round(r.v1)
                 people_info["v2"] = round(r.v2)
@@ -163,7 +163,9 @@ class EmptySeatFinder(Node):
         #remove full seats from IOU parameter
         for i in range(len(chair)):
             for j in range(len(people)):
-                if self.calculateIOU(chair[i], people[j]) >= 0.8:
+                print(f"IOU : {self.calculateIOU(chair[i], people[j])}")
+
+                if self.calculateIOU(chair[i], people[j]) >= 0.3:
                     full_seats.append(i)
                     break
 
@@ -179,13 +181,14 @@ class EmptySeatFinder(Node):
         max_area = 0
         max_idx =0
 
-        for i in range(len(chair)):
-            chair_h = chair[empty_seats[i]]["v2"] - chair[empty_seats[i]]["v1"]
-            chair_w = chair[empty_seats[i]]["u2"] - chair[empty_seats[i]]["u1"]
-            area = chair_h * chair_w
-            if max_area < area:
-                max_area = area
-                max_idx = i
+        if len(empty_seats) > 0:
+            for i in range(len(empty_seats)):
+                chair_h = chair[empty_seats[i]]["v2"] - chair[empty_seats[i]]["v1"]
+                chair_w = chair[empty_seats[i]]["u2"] - chair[empty_seats[i]]["u1"]
+                area = chair_h * chair_w
+                if max_area < area:
+                    max_area = area
+                    max_idx = i
 
         #calculate yaw angle 
         #for i in range(len(empty_seats)):
@@ -199,7 +202,7 @@ class EmptySeatFinder(Node):
             response.angles.append(yaw)
             print(chair[empty_seats[max_idx]])
             cv2.rectangle(report_img, (chair[empty_seats[max_idx]]["u1"], chair[empty_seats[max_idx]]["v1"]), (chair[empty_seats[max_idx]]["u2"], chair[empty_seats[max_idx]]["v2"]), (0,255,0), 3)
-            cv2.imwrite(f"/home/demulab/test_data/recp_chair{self.cnt}.png", report_img)
+            cv2.imwrite(f"/home/demulab/test_data/recp/recp_chair{self.cnt}.png", report_img)
         return response
 
         

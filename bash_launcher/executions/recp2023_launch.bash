@@ -13,5 +13,8 @@ gnome-terminal \
     $tab 'bash -c "sleep 1.5 ; ./v4l2_camera_node.bash;bash"'\
     $tab 'bash -c "sleep 1.5 ; ./object_detection_tf.bash;bash"'\
     $tab 'bash -c "sleep 3.0 ; ./person_detector.bash;bash"'\
+    $tab 'bash -c "sleep 3.0 ; ./person_in_area.bash;bash"'\
     $tab 'bash -c "sleep 3.0 ; ./empty_seat_finder.bash;bash"'\
     $tab 'bash -c "sleep 3.0 ; ./attribute_recog_node.bash;bash"'\
+    $tab 'bash -c "sleep 3.0 ; ./approach_person.bash;bash"'\
+    $tab 'bash -c "sleep 3.0 ; ./lds_distance_finder.bash;bash"'\

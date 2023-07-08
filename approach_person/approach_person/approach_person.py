@@ -67,7 +67,8 @@ class Sekkin(Node):
         super().__init__('approach_person')
         #self.sub = self.create_subscription(Float32MultiArray, 'topic', self.Callback, 10)
         #self.pub = self.create_publisher(Twist, 'cmd_vel', 10)
-
+        #self.tts_srv = self.create_client(TextToSpeech, 'mimic3_play_server')
+        #self.tts_req = TextToSpeech.Request()
         self.srv = self.create_service(TextToSpeech, 'app', self.happymove)
         self.odm_sub = self.create_subscription(Odometry, 'odom', self.odom_cb, 10)
         #self.master_sub = self.create_subscription(String, 'master', self.mas, 10)
@@ -102,6 +103,20 @@ class Sekkin(Node):
     #    #self.happy_move(self.zz, self.dig)
     #    #time.sleep(5)
     #    plt.clf()
+
+    #def tts(self, text):
+    #    # Msg
+    #    self.tts_req.text = text
+        # Call
+    #    future = self.tts_srv.call_async(self.tts_req)
+    #    while not future.done() and rclpy.ok():
+    #        rclpy.spin_once(self, timeout_sec=0.1)
+    #    if future.result() is not None:
+    #        result = future.result().result
+    #        return result
+    #    else:
+    #        self.get_logger().info("Service call failed")
+    #        return False
 
     def set_sekkin_xy(self):
         self.sekkin_xy = self.sekkinclient.pia_send_request()
@@ -176,7 +191,8 @@ class Sekkin(Node):
         while True:
             kyori = self.sekkinclient.pia_send_request()
             if not kyori.result: 
-                print("waiting for guest arrival")
+                #print("waiting for guest arrival")
+                #self.tts("waiting for the guest entering.")
                 time.sleep(0.5)
             else:
                 break

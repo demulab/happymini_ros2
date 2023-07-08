@@ -9,7 +9,7 @@ from rclpy.node import Node
 from rclpy.parameter import Parameter
 # Custom msgs
 from happymini_msgs.srv import TextToSpeech
-
+import shutil
 
 class Mimic3PlayServer(Node):
     def __init__(self):
@@ -58,6 +58,8 @@ class Mimic3PlayServer(Node):
         # 保存先のパス
         self.save_path = self.wav_path + file_name + dot_wav
         self.mimic3_plug.get_tts(text, self.save_path)     # 音声作成 and 保存
+        fname = text.lower().replace(".", "").replace("?", "").replace("!", "").replace(" ", "").replace(",", "")
+        shutil.copyfile(self.save_path, "/home/demulab/test_data/recp/{0}{1}".format(fname, dot_wav))
         self.get_logger().info(f"Save to {self.save_path}")
         return True
 
@@ -70,6 +72,7 @@ class Mimic3PlayServer(Node):
 
     def speak(self, srv_req, srv_res):
         _ = self.text_to_wav(srv_req.text, 'mimic3_voice')
+        print(f"TTS : {srv_req.text}")
         _ = self.wav_play()
         srv_res.result = True
         return srv_res

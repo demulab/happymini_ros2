@@ -131,8 +131,8 @@ class UniqueAttributeRecognizer:
         age = "young" if demographics["age"] < 35  else "middle"
         pron = "He" if demographics["dominant_gender"].find("Man") != -1 else "She"
         feature_sentence = f"The person is {gender}."
-        feature_sentence += f"{pron} looks {age}."
-        feature_sentence += f"{pron} has black hair."
+        feature_sentence += f"_{pron} looks {age}."
+        feature_sentence += f"_{pron} has black hair."
         
         
         tops_color = ""
@@ -146,7 +146,7 @@ class UniqueAttributeRecognizer:
             tops_color = "blue"
         elif red_color_found:
             tops_color = "red"
-        feature_sentence += f"The person is wearing {tops_color} shirt." 
+        feature_sentence += f"_The person is wearing {tops_color} shirt." 
 
         return feature_sentence
 
